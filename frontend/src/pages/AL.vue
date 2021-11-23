@@ -1,0 +1,296 @@
+<template>
+  <q-page padding class="row items-strech">
+    <div class="col-12 column no-wrap">
+      <q-dialog v-model='showList'>
+        <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
+          <q-card-section class="row justify-between">
+            <div class="text-h5">Paper List</div>
+            <div class="col-1 justify-end row">
+              <q-btn class='' icon="close" flat round dense v-close-popup />
+            </div>
+          </q-card-section>
+          <q-card-section class="column" style="height: 100%">
+            <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
+              <q-table
+              style="flex-grow: 1;overflow: auto"
+              class="my-sticky-virtscroll-table"
+              :columns="columns"
+              :rows="paperList"
+              virtual-scroll
+              wrap-cells
+              dense
+              separator="cell"
+              row-key="doi"
+              :rows-per-page-options="[0]"
+              :virtual-scroll-sticky-size-start="48"
+              my-sticky-virtscroll-table
+              v-model:selected="selected"
+              selection="single"
+              @update:selected='loadSelection'
+              />
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+      <div class="col-1 column justify-evenly">
+          <div class="row justify-end">
+            <q-btn
+              icon='menu'
+              style="width:50px"
+              @click="showList = true"
+              color="primary"
+            />
+          </div>
+      </div>
+      <div class="col-4 q-pt-md">
+        <q-card style="height: 100%" class="column no-wrap">
+          <q-card-section class="row justify-evenly">
+            <div class="text-h5">Abstract</div>
+          </q-card-section>
+          <q-card-section class="column" style="overflow: auto; flex-grow: 1">
+            <div class="scroll overflow-auto">
+              {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}}
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="row col-7 justify-between q-pt-xl">
+        <q-card class="col-3 column justify-evenly">
+          <q-card-section class="row justify-evenly">
+            <div class="text-h5">Paper Info</div>
+          </q-card-section>
+          <q-card-section class="column justify-evenly">
+            <q-field stack-label borderless label-color="primary" label='DOI:'>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].doi}}</div>
+              </template>
+            </q-field>
+            <q-field stack-label borderless label-color="primary" label='Title:'>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].title}}</div>
+              </template>
+            </q-field>
+            <q-field stack-label borderless label-color="primary" label='Authors:'>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].authors}}</div>
+              </template>
+            </q-field>
+            <q-field stack-label borderless label-color="primary" label='Year:'>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].year}}</div>
+              </template>
+            </q-field>
+          </q-card-section>
+        </q-card>
+        <q-card class="col-5">
+          <q-card-section class="row justify-evenly">
+            <div class="text-h5">Extracted Values</div>
+          </q-card-section>
+          <q-card-section>
+            <div class='my-outputs row'>
+              <div style="width: 133px;height: auto" class='' v-for="(prediction, index) in predictions" @click="visualize(index)"  :key="prediction">
+                <div class='q-pa-sm'>
+                <q-field
+                :class="index===lastIndex?'output-field q-field--focused':'output-field'"
+                label-color="grey-10"
+                color='indigo-8'
+                stack-label
+                outlined
+                dense
+                :bg-color='getOutputColor(prediction.confidence)'
+                :label="prediction.attribute" >
+                  <template v-slot:control>
+                    <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" tabindex="0">
+                      {{prediction.value}}
+                    </div>
+                  </template>
+                  <!-- <template class='' v-slot:label>
+                    <div class="q-pt-sm row items-start" style='white-space: normal'>
+                      <span>
+                        {{output.field + ' [' + (correctionTable? correctionTable[index].confidence: output.confidence) * 100 + '%]'}}
+                      </span>
+                    </div>
+                  </template> -->
+                </q-field>
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+        <q-card class="col-3 column justify-evenly">
+          <q-card-section class="row justify-evenly">
+            <div class="text-h5">Editor</div>
+          </q-card-section>
+          <q-card-section>
+            <q-field borderless label="Selected Attribute:" label-color='primary' stack-label>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">
+                  {{ lastIndex === 'no_index' ? 'Select a field' : predictions[lastIndex].attribute }}
+                </div>
+              </template>
+            </q-field>
+            <q-field borderless label="Confidence:" label-color='primary' stack-label>
+              <template v-slot:control>
+                <div class="self-center full-width no-outline" tabindex="0">
+                  {{ lastIndex === 'no_index' ? 'Select a field' : predictions[lastIndex].confidence }}
+                </div>
+              </template>
+            </q-field>
+          </q-card-section>
+          <q-card-section>
+            <q-select
+              outlined
+              dense
+              bg-color='grey-3'
+              v-model="insertedValue"
+              use-input
+              fill-input
+              hide-selected
+              @input-value="onInputValue"
+              input-debounce="0"
+              :options="filterOptions"
+              new-value-mode="add-unique"
+              @filter="filterFn"
+              @click.capture="onClick"
+              @popup-hide="onPopupHide"
+              @popup-show="onPopupShow"
+            />
+          </q-card-section>
+          <div class="q-pt-md row justify-evenly">
+            <div class="">
+              <q-btn label="edit" @click="editValue" rounded color="primary" />
+            </div>
+          </div>
+        </q-card>
+      </div>
+    </div>
+  </q-page>
+</template>
+
+<style lang="sass">
+.my-sticky-virtscroll-table
+  /* height or max-height is important */
+  height: 410px
+
+  .q-table__top,
+  .q-table__bottom,
+  thead tr:first-child th /* bg color is important for th; just specify one */
+    background-color: #fff
+
+  thead tr th
+    position: sticky
+    z-index: 1
+  /* this will be the loading indicator */
+  thead tr:last-child th
+    /* height of all previous header rows */
+    top: 48px
+  thead tr:first-child th
+    top: 0
+</style>
+
+<script>
+import { ref } from 'vue'
+import { api } from 'boot/axios'
+const columns = [
+  { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+  { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
+  { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
+  { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
+  { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
+  { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' }
+]
+export default {
+  name: 'AL',
+  setup () {
+    return {
+      paperList: ref([]),
+      columns,
+      rows: ref([]),
+      currentPaper: ref(1),
+      showList: ref(false),
+      predictions: ref([
+        { attribute: 'Mutation Type', value: "strain", confidence: 1 },
+        { attribute: 'Name', value: "v_200n", confidence: 0.5 },
+        { attribute: 'Effect', value: "trasmissibility", confidence: 0.7 }
+      ]),
+      lastIndex: ref('no_index'),
+      greenThreshold: ref(0.8),
+      redThreshold: ref(0.6),
+      insertedValue: ref(''),
+      filterOptions: ref([]),
+      stringOptions: ref(['v_200n']),
+      selected: ref([])
+    }
+  },
+  methods : {
+    getOutputColor (confidence) {
+      if (confidence > this.greenThreshold) return 'green-3'
+      else {
+        if (confidence < this.redThreshold) return 'red-3'
+        else return 'orange-3'
+      }
+    },
+    filterFn (val, update) {
+      // console.log(this.output_fields[2][[0]])
+      update(() => {
+        if (val === '') {
+          this.filterOptions = this.stringOptions.filter(
+            v => v.length < 40
+          )
+        } else {
+          const needle = val.toLowerCase()
+          this.filterOptions = this.stringOptions.filter(
+            v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
+          )
+        }
+      })
+    },
+    createValue (val, done) {
+      if (val.length > 0) {
+        if (!this.stringOptions.includes(val)) {
+          this.stringOptions.push(val)
+        }
+        done(val, 'toogle')
+      }
+    },
+    onInputValue (val) {
+      this.insertedValue = val
+    },
+    onPopupShow (val) {
+      this.popupOpen = true
+    },
+    onPopupHide (val) {
+      this.popupOpen = false
+    },
+    onClick (event) {
+      if (
+        this.popupOpen === true
+        // && event.target.nodeName.toLowerCase() === 'input' // only on click in input
+      ) {
+        event.stopImmediatePropagation()
+      }
+      // forces popup to show again. Can't avoid flickering
+      // this.$refs.input.showPopup()
+    },
+    visualize (index) {
+      this.lastIndex = index
+      this.insertedValue = this.predictions[index].value
+    },
+    editValue () {
+      this.predictions[this.lastIndex].value = this.insertedValue
+      this.predictions[this.lastIndex].confidence = 1
+    },
+    loadSelection () {
+      this.currentPaper = this.selected[0].index
+      // console.log(this.selected[0])
+    }
+  },
+  created () {
+    api.get(
+      '/paperlist'
+    ).then((response) => {
+      this.paperList = response.data.paper_list
+    }).catch((error) => (error.message))
+  }
+}
+</script>

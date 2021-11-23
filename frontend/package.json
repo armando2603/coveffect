@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
+    "axios": "^0.24.0",
     "core-js": "^3.6.5",
+    "prettier": "^2.4.1",
+    "prettier-eslint": "^13.0.0",
     "quasar": "^2.0.0"
   },
   "devDependencies": {
