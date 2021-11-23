@@ -4,5 +4,3 @@ USER root
 RUN npm install -g @quasar/cli
 
 WORKDIR /usr/src/app
-
-RUN npm install
