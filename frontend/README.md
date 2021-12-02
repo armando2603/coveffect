@@ -2,25 +2,22 @@
 
 virus mutation effects extraction
 
+## Build the docker
+```bash
+docker build -t muteffstage-frontend .
+```
+
 ## Install the dependencies
 ```bash
-npm install
+docker run --rm -it -v "/$(pwd)/:/usr/src/app/" -p 61111:8080 muteffstage-frontend:latest npm install
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
 ```bash
-quasar dev
-```
-
-### Lint the files
-```bash
-npm run lint
+docker run --rm -it -v "/$(pwd)/:/usr/src/app/" -p 61111:8080 muteffstage-frontend:latest quasar dev
 ```
 
 ### Build the app for production
 ```bash
-quasar build
+TODO
 ```
-
-### Customize the configuration
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
