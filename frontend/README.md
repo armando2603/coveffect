@@ -14,7 +14,7 @@ docker run --rm -it -v "/$(pwd)/:/usr/src/app/" -p 61111:8080 muteffstage-fronte
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
 ```bash
-docker run --rm -it -v "/$(pwd)/:/usr/src/app/" -p 61111:8080 muteffstage-frontend:latest quasar dev
+docker run --rm -it -v "/$(pwd)/:/usr/src/app/" -p 61111:8080 muteffstage-frontend:latest quasar dev -m ssr
 ```
 
 ### Build the app for production
