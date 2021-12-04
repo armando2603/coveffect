@@ -3,7 +3,7 @@ services:
     frontend:
         image: muteffstage-frontend:latest
         build:
-            context: ./fronted/
+            context: ./frontend/
             dockerfile: Dockerfile
         command: sh -c "npm install && quasar dev"
         volumes:
