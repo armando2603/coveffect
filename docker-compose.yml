@@ -1,0 +1,24 @@
+version: '3.1'
+services:
+    frontend:
+        image: muteffstage-frontend:latest
+        build:
+            context: ./fronted/
+            dockerfile: Dockerfile
+        command: sh -c "npm install && quasar dev"
+        volumes:
+            - ./frontend/:/usr/src/app/
+        container_name: muteffstage-frontend
+        ports:
+            - 61111:8080
+    backend:
+        build:
+            context: ./backend/
+            dockerfile: Dockerfile
+        image: muteffstage-backend:latest
+        container_name: muteffstage-backend
+        volumes:
+            - ./backend/:/workspace/
+        command: sh -c "flask run -p 5003 --host=0.0.0.0"
+        ports:
+            - 61113:5003
