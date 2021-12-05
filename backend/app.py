@@ -27,3 +27,9 @@ def paperlist():
         with open('api/local_data/paper_list.json', 'w') as file:
             json.dump(paper_list, file)
         return
+
+@app.route("/search", methods=['GET'])
+def search():
+    if request.method == 'GET':
+        results = {}
+        return json.dump(results)
