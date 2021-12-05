@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from api.papers import get_paper
+from api.retrieval import retrieve
 from flask_cors import CORS, cross_origin
 from time import time
 import json
@@ -31,5 +32,6 @@ def paperlist():
 @app.route("/search", methods=['GET'])
 def search():
     if request.method == 'GET':
-        results = {}
-        return json.dump(results)
+        query = request.args.get('query')
+        results = retrieve(query)
+        return jsonify(results)

@@ -20,10 +20,11 @@ def retrieve(_query):
     query = mparser.parse(str(_query))
     with INDEX.searcher() as s:
         results = s.search(query)
+        results = [elem['cord_uid'] for elem in results]
         return results
 
-#if __name__ == '__main__':
-#    import os
-#    cwd = os.getcwd()
-#    print(cwd)
-#    print(retrieve("COVID"))
+if __name__ == '__main__':
+    import os
+    cwd = os.getcwd()
+    print(cwd)
+    print("You are in a testing environment")
