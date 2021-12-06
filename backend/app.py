@@ -1,11 +1,17 @@
 from flask import Flask, request, jsonify
 from api.papers import get_paper
+from api.retrieval import search as _search
+from database.database import db_session
 from flask_cors import CORS, cross_origin
 from time import time
 import json
 
 app = Flask(__name__)
 CORS(app)
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 @app.route("/papers", methods=['GET', 'POST'])
 def papers():
@@ -27,3 +33,10 @@ def paperlist():
         with open('api/local_data/paper_list.json', 'w') as file:
             json.dump(paper_list, file)
         return
+
+@app.route("/search", methods=['GET'])
+def search():
+    if request.method == 'GET':
+        query = request.args.get('query')
+        results = _search(query)
+        return jsonify(results)

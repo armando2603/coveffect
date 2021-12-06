@@ -17,3 +17,6 @@ typing-extensions==3.10.0.2
 urllib3==1.26.7
 Werkzeug==2.0.2
 zipp==3.6.0
+whoosh==2.7.4
+sqlalchemy==1.4.27
+mariadb==1.0.8
