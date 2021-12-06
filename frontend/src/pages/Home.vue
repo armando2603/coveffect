@@ -15,7 +15,7 @@
         </q-input>
       </div>
       <div class="row justify-evenly">
-        <q-btn label='search' color='primary' @click='search' />
+        <q-btn label='search' color='primary' @click='search' to='/start'/>
       </div>
       <!-- <div class="row justify-evenly text-h5 q-pt-xl">
         <div class="text-grey-8" style="text-align: center; max-width: 70%">
@@ -65,7 +65,10 @@ export default {
           this.paperList.push(row)
         }
         this.generateIndex()
-        this.saveList()
+        api.post(
+          '/paperlist',
+          { paper_list: this.paperList },
+        ).catch(error => (error.message))
 
       }).catch(error => (error.message))
     },
@@ -73,12 +76,6 @@ export default {
       this.paperList.forEach((row, index) => {
         row.index = index
       })
-    },
-    saveList () {
-      api.post(
-        '/paperlist',
-        { paper_list: this.paperList },
-      ).catch(error => (error.message))
     }
   }
   // name: 'PageName',
