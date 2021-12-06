@@ -4,17 +4,17 @@
       <div class="q-pa-md row justify-end no-wrap">
         <q-card class='row' style="width: 100%">
           <div class="q-pa-md col-8">
-            <q-input v-model="doi" stack-label label="Insert DOI" />
+            <q-input v-model="doi" stack-label label="Insert a DOI" />
           </div>
           <div class="column justify-center q-pa-sm">
             <q-btn class='' rounded icon='add' color='primary' @click='getAbstract'/>
           </div>
           <div class="column justify-center q-pa-sm">
-            <q-btn class='' rounded v-if='rows.length > 0' icon='remove' color='negative' @click='removeSelection'/>
+            <q-btn class='' rounded v-if='rows.length > 0 && selected.length > 0' icon='remove' color='negative' @click='removeSelection'/>
           </div>
-          <div class="column justify-center q-pa-sm">
+          <!-- <div class="column justify-center q-pa-sm">
             <q-btn class='' label='add seeds' color='primary' @click='getSeeds'/>
-          </div>
+          </div> -->
           <q-dialog v-model="alert">
             <q-card>
               <q-card-section>
@@ -32,7 +32,7 @@
           </q-dialog>
         </q-card>
         <div class="column justify-center q-pl-md q-pr-md">
-          <q-btn class='' to='/label' rounded icon='arrow_forward' color='positive' @click='saveList'/>
+          <q-btn class='' to='/AL' rounded icon='arrow_forward' color='positive' @click='saveList'/>
         </div>
       </div>
       <div class="q-pa-md column" style="flex-grow: 1">
@@ -54,7 +54,13 @@
         row-key="doi"
         selection="multiple"
         v-model:selected="selected"
-        />
+        >
+          <template v-slot:body-cell-keep="props">
+            <q-td key='keep' :props="props">
+              <q-checkbox v-model="props.row.keep" />
+            </q-td>
+          </template>
+        </q-table>
       </div>
     </div>
   </q-page>
@@ -92,7 +98,8 @@ const columns = [
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
-  { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' }
+  { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
+  { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
 ]
 
 export default defineComponent({
@@ -118,6 +125,7 @@ export default defineComponent({
       }).then((response) => {
         if (response.data['found'] == true) {
           this.rows.push(response.data['metadata'])
+          this.rows.slice(-1)[0].keep = true
           this.generateIndex()
         }
         else{
@@ -128,7 +136,7 @@ export default defineComponent({
     getSeeds () {},
     generateIndex () {
       this.rows.forEach((row, index) => {
-      row.index = index
+        row.index = index
       })
     },
     removeSelection () {
@@ -144,6 +152,13 @@ export default defineComponent({
         { paper_list: this.rows },
       ).catch(error => (error.message))
     }
+  },
+  created () {
+    api.get(
+      '/paperlist'
+    ).then((response) => {
+      this.rows = response.data.paper_list
+    }).catch(error => (error.message))
   }
 });
 </script>
