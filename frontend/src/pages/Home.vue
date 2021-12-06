@@ -15,7 +15,7 @@
         </q-input>
       </div>
       <div class="row justify-evenly">
-        <q-btn label='search' color='primary' to='/start' />
+        <q-btn label='search' color='primary' @click='search' />
       </div>
       <!-- <div class="row justify-evenly text-h5 q-pt-xl">
         <div class="text-grey-8" style="text-align: center; max-width: 70%">
@@ -36,13 +36,49 @@
 
 <script>
 import { ref } from 'vue';
-import { api } from 'boot/axios'
+import { api } from 'boot/axios';
 
 export default {
   setup () {
     return {
       keywordText: ref(''),
-      DOIText: ref('')
+      DOIText: ref(''),
+      paperList: ref([]),
+      attributes: ref([
+        'doi',
+        'authors',
+        'title',
+        'abstract'
+      ])
+    }
+  },
+  methods : {
+    search () {
+      api.get('/search').then((response) => {
+        // console.log(response.data[0])
+        for (const element of response.data) {
+          let row = {}
+          for (const attribute of this.attributes) {
+            row[attribute] = element[attribute]
+          }
+          row['keep'] = false
+          this.paperList.push(row)
+        }
+        this.generateIndex()
+        this.saveList()
+
+      }).catch(error => (error.message))
+    },
+    generateIndex () {
+      this.paperList.forEach((row, index) => {
+        row.index = index
+      })
+    },
+    saveList () {
+      api.post(
+        '/paperlist',
+        { paper_list: this.paperList },
+      ).catch(error => (error.message))
     }
   }
   // name: 'PageName',
