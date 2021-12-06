@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-runtime
+FROM python:3.8-slim-buster
 
 USER root
 WORKDIR /workspace/
