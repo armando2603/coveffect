@@ -197,7 +197,9 @@ const columns = [
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
-  { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' }
+  // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
+  { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' }
+  // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
 ]
 export default {
   name: 'AL',

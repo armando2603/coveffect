@@ -7,11 +7,11 @@
             <q-input v-model="doi" stack-label label="Insert a DOI" />
           </div>
           <div class="column justify-center q-pa-sm">
-            <q-btn class='' rounded icon='add' color='primary' @click='getAbstract'/>
+            <q-btn class='' rounded icon='add' color='primary' @click='getPaper'/>
           </div>
-          <div class="column justify-center q-pa-sm">
+          <!-- <div class="column justify-center q-pa-sm">
             <q-btn class='' rounded v-if='rows.length > 0 && selected.length > 0' icon='remove' color='negative' @click='removeSelection'/>
-          </div>
+          </div> -->
           <!-- <div class="column justify-center q-pa-sm">
             <q-btn class='' label='add seeds' color='primary' @click='getSeeds'/>
           </div> -->
@@ -32,7 +32,7 @@
           </q-dialog>
         </q-card>
         <div class="column justify-center q-pl-md q-pr-md">
-          <q-btn class='' to='/AL' rounded icon='arrow_forward' color='positive' @click='saveList'/>
+          <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
         </div>
       </div>
       <div class="q-pa-md column" style="flex-grow: 1">
@@ -52,8 +52,6 @@
         :rows="rows"
         :columns="columns"
         row-key="doi"
-        selection="multiple"
-        v-model:selected="selected"
         >
           <template v-slot:body-cell-keep="props">
             <q-td key='keep' :props="props">
@@ -99,6 +97,7 @@ const columns = [
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
   // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
+  { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
 ]
 
@@ -109,12 +108,11 @@ export default defineComponent({
       doi : ref(''),
       alert : ref(false),
       columns,
-      rows : ref([]),
-      selected: ref([])
+      rows : ref([])
     }
   },
   methods : {
-    getAbstract () {
+    getPaper () {
       for (const element of this.rows) {
         if (element.doi === this.doi) {
           return
@@ -124,9 +122,9 @@ export default defineComponent({
         doi: this.doi
       }).then((response) => {
         if (response.data['found'] == true) {
-          this.rows.push(response.data['metadata'])
-          this.rows.slice(-1)[0].keep = true
-          this.generateIndex()
+          this.rows.unshift(response.data['metadata'])
+          this.rows[0].keep = true
+          this.generateIndex(this.rows)
         }
         else{
           this.alert = true
@@ -134,22 +132,30 @@ export default defineComponent({
       }).catch(error => (error.message))
     },
     getSeeds () {},
-    generateIndex () {
-      this.rows.forEach((row, index) => {
+    generateIndex (no_indexed_list) {
+      no_indexed_list.forEach((row, index) => {
         row.index = index
-      })
+      }) 
     },
-    removeSelection () {
-      for (const element of this.selected){
-        this.rows.splice(element.index, 1)
-        this.generateIndex()
-        this.selected = []
-      }
-    },
+    // removeSelection () {
+    //   for (const element of this.selected){
+    //     this.rows.splice(element.index, 1)
+    //     this.generateIndex()
+    //     this.selected = []
+    //   }
+    // },
     saveList () {
+      let saved_list = []
+      for (const element of this.rows) {
+        if (element.keep === true) {
+          saved_list.push(element)
+        }
+      }
+      this.generateIndex(saved_list)
       api.post(
         '/paperlist',
-        { paper_list: this.rows },
+        { paper_list: saved_list },
+      ).then( response => (this.$router.push({path: '/AL'}))
       ).catch(error => (error.message))
     }
   },
@@ -158,6 +164,7 @@ export default defineComponent({
       '/paperlist'
     ).then((response) => {
       this.rows = response.data.paper_list
+      // console.log(this.rows[0])
     }).catch(error => (error.message))
   }
 });

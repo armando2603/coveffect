@@ -32,6 +32,7 @@ def paperlist():
         paper_list = request.get_json()['paper_list']
         with open('api/local_data/paper_list.json', 'w') as file:
             json.dump(paper_list, file)
+        return jsonify({'msg': 'The list has been saved'})
 
 @app.route("/search", methods=['GET'])
 def search():

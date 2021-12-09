@@ -4,12 +4,14 @@ from flask import jsonify
 def get_paper(doi):
     sch = SemanticScholar(timeout=3)
     paper = sch.paper(doi)
+    print(paper['venue'])
     fields = [
         'title',
         'authors',
         'doi',
         'abstract',
-        'year'
+        'year',
+        'venue'
     ]
     try:
         response = {}
@@ -18,6 +20,8 @@ def get_paper(doi):
                 authors = [author['name'] for author in paper['authors']]
                 response[field] = '; '.join(authors)
                 # print(', '.join(authors))
+            elif field == 'venue':
+                response['journal'] = paper[field]
             else:
                 response[field] = paper[field]
 
