@@ -17,7 +17,22 @@ def similar_by_cord(cord_uid):
     similar_papers = index.get_nns_by_item(original.annoy_id, 11)
     # Get the complete description for each similar paper
     results = []
-    for paper in similar_papers[1:]:
+    
+    for paper in similar_papers[1:]:    # Exclude the starting paper
+        results.append(Metadata.query.filter(Metadata.annoy_id == paper).first())
+    results = [md.serialize() for md in results]
+    return results
+
+### Attention: Right now it only checks the DOIs available in CORD19
+def similar_by_doi(doi):
+    # Get the complete row
+    original = Metadata.query.filter(Metadata.cord_uid == doi).first()
+    # Get similar papers by annoy_id using the index
+    similar_papers = index.get_nns_by_item(original.annoy_id, 11)
+    # Get the complete description for each similar paper
+    results = []
+    
+    for paper in similar_papers[1:]:    # Exclude the starting paper
         results.append(Metadata.query.filter(Metadata.annoy_id == paper).first())
     results = [md.serialize() for md in results]
     return results
