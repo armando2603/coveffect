@@ -1,5 +1,5 @@
 from whoosh import index
-from whoosh.qparser import MultifieldParser
+from whoosh.qparser import MultifieldParser, FuzzyTermPlugin, OperatorsPlugin
 from whoosh.fields import Schema, TEXT, KEYWORD, ID, STORED
 from whoosh.analysis import RegexTokenizer, LowercaseFilter, StopFilter
 
@@ -17,8 +17,12 @@ SCHEMA = Schema(
     lemmatized = TEXT(analyzer=ANALYZER)
 )
 
+mparser = MultifieldParser(["title","abstract"], schema=SCHEMA)
+mparser.add_plugin(FuzzyTermPlugin())
+mparser.add_plugin(OperatorsPlugin())
+
+
 def retrieve(_query):
-    mparser = MultifieldParser(["title","abstract"], schema=SCHEMA)
     query = mparser.parse(str(_query))
     with INDEX.searcher() as s:
         results = s.search(query)
