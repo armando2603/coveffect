@@ -41,7 +41,7 @@ class Predictor:
         )
         print(torch.cuda.is_available())
         self.generated_sequence = None
-        self.MAX_LEN = 350
+        self.MAX_LEN = 900
         self.model = None
         self.status = 0
         self.model_id = None
@@ -55,7 +55,8 @@ class Predictor:
             'pad_token': '<PAD>',
             'bos_token': '<BOS>',
             'eos_token': '<EOS>',
-            'sep_token': '<SEP>'
+            'sep_token': '<SEP>',
+            'additional_special_tokens': ['<SEPO>']
         })
         self.base_model = GPT2LMHeadModel(self.config)
         self.base_model.resize_token_embeddings(len(self.tokenizer))
@@ -65,8 +66,8 @@ class Predictor:
 
         self.model.resize_token_embeddings(len(self.tokenizer))
         # self.name_model = 'checkpoint_4-epoch=14-val_loss=0.306.ckpt'
-        self.name_model = 'checkpoint-4-8+-epoch=12-val_loss=0.287.ckpt'
-        checkpoint = torch.load('Models/' + self.name_model, map_location='cpu')
+        self.name_model = 'only-mutation-epoch=10.ckpt'
+        checkpoint = torch.load('api/Checkpoints/' + self.name_model, map_location='cpu')
         if 'state_dict' in checkpoint.keys():
             state_dict = checkpoint['state_dict']
             new_state_dict = OrderedDict()
@@ -77,11 +78,11 @@ class Predictor:
                     name = k
                 new_state_dict[name] = v
             self.model.load_state_dict(new_state_dict)
-            torch.save(self.model.state_dict(), 'Models/' + self.name_model)
+            torch.save(self.model.state_dict(), 'api/Checkpoints/' + self.name_model)
         else:
             del checkpoint
 
-        # checkpoint = torch.load('Models/' + self.name_model_1)
+        # checkpoint = torch.load('api/Checkpoints/' + self.name_model_1)
         # if 'state_dict' in checkpoint.keys():
         #     state_dict = checkpoint['state_dict']
         #     new_state_dict = OrderedDict()
@@ -92,10 +93,10 @@ class Predictor:
         #             name = k
         #         new_state_dict[name] = v
         #     self.model.load_state_dict(new_state_dict)
-        #     torch.save(self.model.state_dict(), 'Models/' + self.name_model_1)
+        #     torch.save(self.model.state_dict(), 'api/Checkpoints/' + self.name_model_1)
 
         # self.model.load_state_dict(
-        #     torch.load('Models/' + self.name_model_2)
+        #     torch.load('api/Checkpoints/' + self.name_model_2)
         # )
         # model 2
         # self.model.load_state_dict(
@@ -114,13 +115,13 @@ class Predictor:
     def predict(self, list_input_text, fields):
         self.fields = fields
         self.model = self.base_model.to(self.device)
-        if path.isfile('Models/' + 'augmented_' + self.name_model):
+        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
             augmented = 'augmented_'
         else:
             augmented = ''
         self.model.load_state_dict(
             torch.load(
-                'Models/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
             )
         )
         # Predict all tokens
@@ -252,13 +253,13 @@ class Predictor:
         self.model = self.base_model.to(self.device)
         table_json = []
         self.fields = fields
-        if path.isfile('Models/' + 'augmented_' + self.name_model):
+        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
             augmented = 'augmented_'
         else:
             augmented = ''
         self.model.load_state_dict(
             torch.load(
-                'Models/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
             )
         )
         with torch.no_grad():
@@ -388,13 +389,13 @@ class Predictor:
 
     def onlineLearning(self, input_text, output_list, field_list):
         self.model = self.base_model.to(self.device)
-        if path.isfile('Models/' + 'augmented_' + self.name_model):
+        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
             augmented = 'augmented_'
         else:
             augmented = ''
         self.model.load_state_dict(
             torch.load(
-                'Models/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
             )
         )
         input_prefix = self.tokenizer.encode(
@@ -491,16 +492,16 @@ class Predictor:
             # 1
         torch.save(
             self.model.state_dict(),
-            'Models/' + 'augmented_' + self.name_model
+            'api/Checkpoints/' + 'augmented_' + self.name_model
         )
         del self.model
         with torch.cuda.device(self.device):
             torch.cuda.empty_cache()
         # torch.save(
         #     self.model.state_dict(),
-        #     'Models/' + self.name_model_2
+        #     'api/Checkpoints/' + self.name_model_2
         # )
         # self.model.load_state_dict(
-        #     torch.load('Models/' + self.name_model_2)
+        #     torch.load('api/Checkpoints/' + self.name_model_2)
         # )
         # self.model.eval()
