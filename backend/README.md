@@ -2,6 +2,10 @@
 
 virus mutation effects extraction
 
+### Suggested installation for annoy on Windows 10
+Without installing all Visual Studio 2015
+[How to install annoy in python windows environment](https://www.programmersought.com/article/95834605670/)
+
 ## Build the docker
 ```bash
 docker build -t muteffstage-backend .

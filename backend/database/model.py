@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Date, DateTime
+from sqlalchemy import Column, String, Text, Date, DateTime, Integer
 from database.database import Base
 
 class Metadata(Base):
@@ -27,6 +27,7 @@ class Metadata(Base):
     label           = Column(String(30))
     label_name      = Column(String(100))
     citescore_journal= Column(String(200))
+    annoy_id        = Column(Integer)
 
     def __repr__(self):
         return f'<Paper {self.cord_uid}, title: \'{self.title}\'>'
@@ -40,5 +41,5 @@ class Metadata(Base):
             'authors': self.authors,
             'journal': self.citescore_journal,
             'publish_time' : self.publish_time,
-            'label' : self.label
+            'label' : self.label_name
         }

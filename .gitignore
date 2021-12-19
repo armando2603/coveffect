@@ -38,3 +38,5 @@ yarn-error.log*
 *.njsproj
 *.sln
 
+# Annoy index files
+*.ann

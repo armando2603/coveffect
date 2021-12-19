@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from api.papers import get_paper
 from api.retrieval import search as _search
+from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
 from flask_cors import CORS, cross_origin
 from time import time
@@ -39,4 +40,18 @@ def search():
     if request.method == 'GET':
         query = request.args.get('query')
         results = _search(query)
+        return jsonify(results)
+
+@app.route("/similar", methods=['GET'])
+def similar():
+    if request.method == 'GET':
+        by = request.args.get('by')
+        by = by.lower()
+        id = request.args.get('id')
+        if by == 'cord':
+            results = similar_by_cord(id)
+        if by == 'doi':
+            results = similar_by_doi(id)
+        else:
+            results = []
         return jsonify(results)
