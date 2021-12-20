@@ -18,7 +18,6 @@ SCHEMA = Schema(
 )
 
 mparser = MultifieldParser(["title","abstract"], schema=SCHEMA)
-mparser.add_plugin(FuzzyTermPlugin())
 mparser.add_plugin(OperatorsPlugin())
 
 
