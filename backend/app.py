@@ -51,6 +51,4 @@ def similar():
         results = similar_by_cord(id)
     if by == 'doi':
         results = similar_by_doi(id)
-    else:
-        results = []
     return jsonify(results)

@@ -187,11 +187,13 @@ export default defineComponent({
         by = "cord"
         id = row.cord_uid
       }
+      console.log('sto mandando')
+      console.log(by, id)
       api.post(
         '/similar',
         { by: by, id: id}
       ).then( (response) => {
-        console.log(response.data)
+        console.log(response)
       }).catch(error => (error.message))
 
 
