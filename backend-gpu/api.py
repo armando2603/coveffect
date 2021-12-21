@@ -101,7 +101,7 @@ def gradientParser(
     return outputs, gradient_inputs
 
 
-@app.route('/extraction_model', methods=['POST'])
+@app.route('/extract_attributes', methods=['POST'])
 def CallModel():
     data = request.get_json()
     input_text = data['input']
@@ -124,7 +124,8 @@ def CallModel():
 
     response = {
         'outputs': outputs,
-        'gradient': gradient_inputs
+        'saliency_map': gradient_inputs
+
     }
     return jsonify(response)
 

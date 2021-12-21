@@ -20,7 +20,7 @@
               wrap-cells
               dense
               separator="cell"
-              row-key="doi"
+              row-key="index"
               :rows-per-page-options="[0]"
               :virtual-scroll-sticky-size-start="48"
               my-sticky-virtscroll-table
@@ -49,7 +49,10 @@
           </q-card-section>
           <q-card-section class="column" style="overflow: auto; flex-grow: 1">
             <div class="scroll overflow-auto">
-              {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}}
+              <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
+                <mark v-for="element in highlighted_abstract" :key="element" :class="element.color">
+                  {{ element.text }}
+                </mark>
             </div>
           </q-card-section>
         </q-card>
@@ -190,7 +193,7 @@
 
 <script>
 import { ref } from 'vue'
-import { api } from 'boot/axios'
+import { api, apiGPU } from 'boot/axios'
 const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
@@ -207,8 +210,7 @@ export default {
     return {
       paperList: ref([]),
       columns,
-      rows: ref([]),
-      currentPaper: ref(1),
+      currentPaper: ref(0),
       showList: ref(false),
       predictions: ref([
         { attribute: 'Mutation Type', value: "strain", confidence: 1 },
@@ -221,10 +223,38 @@ export default {
       insertedValue: ref(''),
       filterOptions: ref([]),
       stringOptions: ref(['v_200n']),
-      selected: ref([])
+      selected: ref([]),
+      highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
+      saliency_map: ref([])
     }
   },
   methods : {
+    extraction () {
+      console.log('qua ci arrivo')
+      apiGPU.post('/extract_attributes',
+      {
+        input: this.paperList[this.selected[0]['index']].abstract,
+        output_attributes: ['mutation name']
+      }).then( (response) => {
+        this.predictions =  JSON.parse(JSON.stringify(response.data.outputs))
+        this.saliency_map = response.data.saliency_map
+        const index = 0
+        this.visualize(0)
+      }).catch((error) => (error.message))
+    },
+    visualize (index) {
+      // To Fix later
+      // if (this.last_index !== index) {
+      //   this.$nextTick(() => {
+      //     this.$refs.outputField[index].click()
+      //   })
+      // }
+      this.lastIndex = index
+      this.insertedValue = ''
+      console.log(this.saliency_map)
+      this.highlighted_abstract.values = this.saliency_map[index][0]
+
+    },
     getOutputColor (confidence) {
       if (confidence > this.greenThreshold) return 'green-3'
       else {
@@ -274,17 +304,21 @@ export default {
       // forces popup to show again. Can't avoid flickering
       // this.$refs.input.showPopup()
     },
-    visualize (index) {
-      this.lastIndex = index
-      this.insertedValue = this.predictions[index].value
-    },
     editValue () {
       this.predictions[this.lastIndex].value = this.insertedValue
       this.predictions[this.lastIndex].confidence = 1
     },
     loadSelection () {
       this.currentPaper = this.selected[0].index
+      this.extraction()
       // console.log(this.selected[0])
+    },
+    resetPage () {
+      this.selected = [{ index: 0 }]
+      this.insertedValue = ''
+      this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
+      this.predictions = []
+      this.extraction()
     }
   },
   created () {
@@ -292,6 +326,7 @@ export default {
       '/paperlist'
     ).then((response) => {
       this.paperList = response.data.paper_list
+      this.resetPage()
     }).catch((error) => (error.message))
   }
 }

@@ -64,6 +64,7 @@ export default {
           }
           row['keep'] = true
           this.paperList.push(row)
+        console.log(response.data)
         }
         this.generateIndex()
         api.post(
