@@ -35,14 +35,14 @@ def paperlist():
             json.dump(paper_list, file)
         return jsonify({'msg': 'The list has been saved'})
 
-@app.route("/search", methods=['GET'])
+@app.route("/search", methods=['POST'])
 def search():
     query = request.get_json()['query']
     print(query)
     results = _search(query)
     return jsonify(results)
 
-@app.route("/similar", methods=['GET'])
+@app.route("/similar", methods=['POST'])
 def similar():
     by = request.get_json()['by']
     by = by.lower()
