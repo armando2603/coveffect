@@ -24,7 +24,7 @@ def get_paper(doi):
                 response['journal'] = paper[field]
             else:
                 response[field] = paper[field]
-
+        response['cord_uid'] = ''
         if 'abstract' in paper.keys():
             return {'found': True, 'metadata': response}
         else:

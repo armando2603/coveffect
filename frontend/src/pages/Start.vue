@@ -51,11 +51,17 @@
         :virtual-scroll-sticky-size-start="48"
         :rows="rows"
         :columns="columns"
-        row-key="doi"
+        row-key="index"
+        :visible-columns="visible_columns"
         >
           <template v-slot:body-cell-keep="props">
             <q-td key='keep' :props="props">
               <q-checkbox v-model="props.row.keep" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-similar="props">
+            <q-td key='similar' :props="props">
+              <q-btn :disable="props.row.keep===false" unelevated dense size="sm" color="primary" label='find similars' @click="findSimilar(props.row)" />
             </q-td>
           </template>
         </q-table>
@@ -92,13 +98,25 @@ import { ref } from 'vue'
 
 const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+  { name: 'cord_uid', label: 'cord_uid', field: 'cord_uid', align: 'center' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
   // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
   { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
-  { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
+  { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
+  { name: 'similar', label: '', align: 'center' }
+
+]
+
+const visible_columns = [
+  "title",
+  "authors",
+  "abstract",
+  "journal",
+  "keep",
+  "similar"
 ]
 
 export default defineComponent({
@@ -108,7 +126,8 @@ export default defineComponent({
       doi : ref(''),
       alert : ref(false),
       columns,
-      rows : ref([])
+      rows : ref([]),
+      visible_columns
     }
   },
   methods : {
@@ -157,6 +176,25 @@ export default defineComponent({
         { paper_list: saved_list },
       ).then( response => (this.$router.push({path: '/AL'}))
       ).catch(error => (error.message))
+    },
+    findSimilar (row) {
+      let by = ""
+      let id = ""
+      if (row.cord_uid === '') {
+        by = "doi"
+        id = row.doi
+      } else {
+        by = "cord"
+        id = row.cord_uid
+      }
+      api.post(
+        '/similar',
+        { by: by, id: id}
+      ).then( (response) => {
+        console.log(response.data)
+      }).catch(error => (error.message))
+
+
     }
   },
   created () {

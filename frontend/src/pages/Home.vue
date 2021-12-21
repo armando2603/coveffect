@@ -49,7 +49,8 @@ export default {
         'authors',
         'title',
         'abstract',
-        'journal'
+        'journal',
+        'cord_uid'
       ])
     }
   },
@@ -60,6 +61,7 @@ export default {
         { query: this.keywordText}
       ).then((response) => {
         // console.log(response.data[0])
+        print(response.data)
         for (const element of response.data) {
           let row = {}
           for (const attribute of this.attributes) {
@@ -67,7 +69,6 @@ export default {
           }
           row['keep'] = true
           this.paperList.push(row)
-        console.log(response.data)
         }
         this.generateIndex()
         api.post(
