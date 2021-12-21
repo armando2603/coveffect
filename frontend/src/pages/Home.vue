@@ -55,7 +55,10 @@ export default {
   },
   methods : {
     search () {
-      api.get('/search').then((response) => {
+      api.post(
+        '/search',
+        { query: this.keywordText}
+      ).then((response) => {
         // console.log(response.data[0])
         for (const element of response.data) {
           let row = {}

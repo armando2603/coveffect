@@ -17,7 +17,7 @@ def shutdown_session(exception=None):
 @app.route("/papers", methods=['GET', 'POST'])
 def papers():
     if request.method == 'GET':
-        return jsonify({'reposonse': 'ok'})
+        return jsonify({'response': 'ok'})
     if request.method == 'POST':
         data = request.get_json()
         response = get_paper(data['doi'])
@@ -37,22 +37,20 @@ def paperlist():
 
 @app.route("/search", methods=['GET'])
 def search():
-    if request.method == 'GET':
-        query = request.args.get('query')
-        print(query)
-        results = _search(query)
-        return jsonify(results)
+    query = request.get_json()['query']
+    print(query)
+    results = _search(query)
+    return jsonify(results)
 
 @app.route("/similar", methods=['GET'])
 def similar():
-    if request.method == 'GET':
-        by = request.args.get('by')
-        by = by.lower()
-        id = request.args.get('id')
-        if by == 'cord':
-            results = similar_by_cord(id)
-        if by == 'doi':
-            results = similar_by_doi(id)
-        else:
-            results = []
-        return jsonify(results)
+    by = request.get_json()['by']
+    by = by.lower()
+    id = request.get_json()['id']
+    if by == 'cord':
+        results = similar_by_cord(id)
+    if by == 'doi':
+        results = similar_by_doi(id)
+    else:
+        results = []
+    return jsonify(results)
