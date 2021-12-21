@@ -22,5 +22,3 @@ services:
         command: sh -c "flask run -p 5003 --host=0.0.0.0"
         ports:
             - 61113:5003
-networks:
-    muteffstage-network
