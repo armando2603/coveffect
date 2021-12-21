@@ -39,6 +39,7 @@ def paperlist():
 def search():
     if request.method == 'GET':
         query = request.args.get('query')
+        print(query)
         results = _search(query)
         return jsonify(results)
 
