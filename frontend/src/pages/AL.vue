@@ -237,6 +237,7 @@ export default {
         output_attributes: ['mutation name']
       }).then( (response) => {
         this.predictions =  JSON.parse(JSON.stringify(response.data.outputs))
+        console.log(response.data.saliency_map)
         this.saliency_map = response.data.saliency_map
         const index = 0
         this.visualize(0)

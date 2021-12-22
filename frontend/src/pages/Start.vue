@@ -98,8 +98,9 @@ import { ref } from 'vue'
 
 const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
-  { name: 'cord_uid', label: 'cord_uid', field: 'cord_uid', align: 'center' },
+  { name: 'cord_uid', label: 'Cord UID', field: 'cord_uid', align: 'center' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
+  { name: 'similarto', label: 'Similar To', field: 'similar_to', align: 'left' },
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
@@ -107,10 +108,11 @@ const columns = [
   { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
   { name: 'similar', label: '', align: 'center' }
-
 ]
 
 const visible_columns = [
+  "cord_uid",
+  "similarto",
   "title",
   "authors",
   "abstract",
@@ -187,16 +189,22 @@ export default defineComponent({
         by = "cord"
         id = row.cord_uid
       }
-      console.log('sto mandando')
-      console.log(by, id)
       api.post(
         '/similar',
         { by: by, id: id}
       ).then( (response) => {
-        console.log(response)
+        let similars = response.data
+        // console.log(similars)
+        let current_index = row.index
+        // console.log(index)
+        for (let element of similars) {
+          element['keep'] = true
+          element['similar_to'] = id
+          this.rows.splice(current_index + 1, 0, element)
+          current_index += 1
+        }
+        this.generateIndex(this.rows)
       }).catch(error => (error.message))
-
-
     }
   },
   created () {

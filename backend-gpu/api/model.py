@@ -151,7 +151,7 @@ class Predictor:
                         torch.tensor([[self.tokenizer.bos_token_id]]),
                         prefix_input_ids,
                         torch.tensor([[self.tokenizer.sep_token_id]]),
-                        conditional_ids
+                        # conditional_ids
                     ),
                     dim=-1
                 ).to(self.device)

@@ -109,7 +109,7 @@ def CallModel():
     pred.attributes = output_attributes
 
     output_ids_list, confidences, grad_explains = pred.predict(
-        [input_text]
+        [input_text], output_attributes
     )
 
     input_ids = np.array(pred.tokenizer.encode(input_text))
