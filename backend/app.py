@@ -45,8 +45,9 @@ def saveFeedbacks():
             feedbacks = old_feedbacks + feedbacks
             json.dump(feedbacks, f) 
     else:
-         with open('api/local_data/feedbacks.json', 'w') as f:
-             json.dump(feedbacks, f) 
+        print(feedbacks)
+        with open('api/local_data/feedbacks.json', 'w') as f:
+            json.dump(feedbacks, f) 
     return jsonify({'msg': 'error'})
     
 @app.route("/search", methods=['POST'])

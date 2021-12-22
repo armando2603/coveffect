@@ -339,6 +339,7 @@ export default {
       this.extraction()
     },
     saveFeedbacks () {
+      console.log(this.feedback_list)
       api.post(
         '/saveFeedbacks',
         { feedback_list: this.feedback_list }
