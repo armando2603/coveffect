@@ -340,7 +340,7 @@ export default {
     },
     saveFeedbacks () {
       api.post(
-        '/saveFeebacks',
+        '/saveFeedbacks',
         { feedback_list: this.feedback_list }
       ).catch( (error) => (error.message))
       // seleziono paper subito dopo
