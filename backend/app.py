@@ -5,6 +5,7 @@ from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
 from flask_cors import CORS, cross_origin
 from time import time
+from os import path
 import json
 
 app = Flask(__name__)
@@ -35,6 +36,17 @@ def paperlist():
             json.dump(paper_list, file)
         return jsonify({'msg': 'The list has been saved'})
 
+@app.route("/saveFeedbacks", methods=['POST'])
+def saveFeedbacks():
+    feedbacks = request.get_json()['feedback_list']
+    if path.isfile('data/api/local_data/feedbacks.json'):
+        with open('data/api/local_data/feedbacks.json') as f:
+            old_feedbacks = json.load(f)
+            feedbacks = old_feedbacks + feedbacks
+            json.dump(feedbacks, f) 
+    else:
+         with open('data/api/local_data/feedbacks.json', 'w') as f:
+             json.dump(feedbacks, f) 
 @app.route("/search", methods=['POST'])
 def search():
     query = request.get_json()['query']

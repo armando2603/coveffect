@@ -85,7 +85,8 @@
             </q-field>
           </q-card-section>
         </q-card>
-        <q-card class="col-5">
+        <q-card class="col-5 column justify-between">
+          <div>
           <q-card-section class="row justify-evenly">
             <div class="text-h5">Extracted Values</div>
           </q-card-section>
@@ -117,7 +118,11 @@
                 </q-field>
                 </div>
               </div>
-            </div>
+            </div>    
+          </q-card-section>
+          </div>
+          <q-card-section class="row justify-evenly">
+            <q-btn unelevate color='primary' label='save' @click="saveFeedbacks"/>
           </q-card-section>
         </q-card>
         <q-card class="col-3 column justify-evenly">
@@ -222,10 +227,11 @@ export default {
       redThreshold: ref(0.6),
       insertedValue: ref(''),
       filterOptions: ref([]),
-      stringOptions: ref(['v_200n']),
+      stringOptions: ref([]),
       selected: ref([]),
       highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
-      saliency_map: ref([])
+      feedback_list: ref([]),
+      saliency_maps: ref([])
     }
   },
   methods : {
@@ -237,8 +243,10 @@ export default {
         output_attributes: ['mutation name']
       }).then( (response) => {
         this.predictions =  JSON.parse(JSON.stringify(response.data.outputs))
-        console.log(response.data.saliency_map)
-        this.saliency_map = response.data.saliency_map
+        this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
+        this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
+        this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
+        this.saliency_maps = response.data.saliency_map
         const index = 0
         this.visualize(0)
       }).catch((error) => (error.message))
@@ -252,8 +260,7 @@ export default {
       // }
       this.lastIndex = index
       this.insertedValue = ''
-      console.log(this.saliency_map)
-      this.highlighted_abstract.values = this.saliency_map[index][0]
+      this.highlighted_abstract = this.saliency_maps[0][index]
 
     },
     getOutputColor (confidence) {
@@ -308,6 +315,15 @@ export default {
     editValue () {
       this.predictions[this.lastIndex].value = this.insertedValue
       this.predictions[this.lastIndex].confidence = 1
+      this.feedback_list.push(
+        {
+          value: this.insertedValue,
+          attribute: this.predictions[this.lastIndex].attribute,
+          doi: this.selected[0].doi,
+          cord_uid: this.selected[0].cord_uid,
+          abstract: this.selected[0].abstract
+        }
+      )
     },
     loadSelection () {
       this.currentPaper = this.selected[0].index
@@ -315,11 +331,21 @@ export default {
       // console.log(this.selected[0])
     },
     resetPage () {
-      this.selected = [{ index: 0 }]
+      this.selected = [this.paperList[0]]
       this.insertedValue = ''
       this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
       this.predictions = []
+      this.feedback_list = []
       this.extraction()
+    },
+    saveFeedbacks () {
+      api.post(
+        '/saveFeebacks',
+        { feedback_list: this.feedback_list }
+      ).catch( (error) => (error.message))
+      // seleziono paper subito dopo
+      this.selected = [this.paperList[this.selected[0].index + 1]]
+      this.loadSelection()
     }
   },
   created () {

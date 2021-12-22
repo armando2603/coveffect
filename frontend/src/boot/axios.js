@@ -2,7 +2,7 @@ import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
 const api = axios.create({ baseURL: 'http://geco.deib.polimi.it/muteffstage_api/' })
-const apiGPU = axios.create({ baseURL: 'http://b196-34-123-105-238.ngrok.io' })
+const apiGPU = axios.create({ baseURL: 'http://7713-34-69-1-180.ngrok.io' })
 // to work in local use instead this ip
 //const api = axios.create({ baseURL: 'http://localhost:61113/' })
 
