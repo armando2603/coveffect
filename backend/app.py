@@ -42,10 +42,10 @@ def saveFeedbacks():
     if path.isfile('api/local_data/feedbacks.json'):
         with open('api/local_data/feedbacks.json') as f:
             old_feedbacks = json.load(f)
-            feedbacks = old_feedbacks + feedbacks
+        feedbacks = old_feedbacks + feedbacks
+        with open('api/local_data/feedbacks.json', 'w') as f:
             json.dump(feedbacks, f) 
     else:
-        print(feedbacks)
         with open('api/local_data/feedbacks.json', 'w') as f:
             json.dump(feedbacks, f) 
     return jsonify({'msg': 'error'})
