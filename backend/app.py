@@ -39,13 +39,13 @@ def paperlist():
 @app.route("/saveFeedbacks", methods=['POST'])
 def saveFeedbacks():
     feedbacks = request.get_json()['feedback_list']
-    if path.isfile('data/api/local_data/feedbacks.json'):
-        with open('data/api/local_data/feedbacks.json') as f:
+    if path.isfile('api/local_data/feedbacks.json'):
+        with open('api/local_data/feedbacks.json') as f:
             old_feedbacks = json.load(f)
             feedbacks = old_feedbacks + feedbacks
             json.dump(feedbacks, f) 
     else:
-         with open('data/api/local_data/feedbacks.json', 'w') as f:
+         with open('api/local_data/feedbacks.json', 'w') as f:
              json.dump(feedbacks, f) 
 @app.route("/search", methods=['POST'])
 def search():
