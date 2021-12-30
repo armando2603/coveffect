@@ -1,7 +1,7 @@
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from api.model import Predictor
+from model import Predictor
 
 
 app = Flask(__name__)
