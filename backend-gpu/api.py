@@ -129,6 +129,14 @@ def CallModel():
     }
     return jsonify(response)
 
+@app.route('/generateTable', methods=['POST'])
+def generateTable():
+    data = request.get_json()
+    inputs = data['inputs']
+    attributes = data['output_attributes']
+    outputs = pred.generateTable(inputs, attributes)
+    return jsonify(outputs)
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()

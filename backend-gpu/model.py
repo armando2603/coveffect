@@ -151,7 +151,7 @@ class Predictor:
                         torch.tensor([[self.tokenizer.bos_token_id]]),
                         prefix_input_ids,
                         torch.tensor([[self.tokenizer.sep_token_id]]),
-                        # conditional_ids
+                        conditional_ids
                     ),
                     dim=-1
                 ).to(self.device)
@@ -248,10 +248,10 @@ class Predictor:
         inputs_embeds = torch.matmul(token_ids_tensor_one_hot, embedding_matrix)
         return inputs_embeds, token_ids_tensor_one_hot
 
-    def generateTable(self, list_input_dict, fields):
+    def generateTable(self, inputs, fields):
         self.status = 0
         self.model = self.base_model.to(self.device)
-        table_json = []
+        outputs = []
         self.fields = fields
         if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
             augmented = 'augmented_'
@@ -263,12 +263,12 @@ class Predictor:
             )
         )
         with torch.no_grad():
-            for it, input_dict in enumerate(tqdm(list_input_dict)):
-                self.status = round((it + 1)/len(list_input_dict), 2) * 100
+            for it, input_text in enumerate(tqdm(inputs)):
+                self.status = round((it + 1)/len(inputs), 2) * 100
                 prediction_list = []
-                fields_dict = dict()
+                attributes_dict = dict()
                 pre_input_ids = self.tokenizer.encode(
-                    input_dict['input_text'].lower(),
+                    input_text.lower(),
                     return_tensors='pt',
                     truncation=True,
                     max_length=self.MAX_LEN
@@ -300,7 +300,7 @@ class Predictor:
                     # is_value = False
                     # attn_mask = torch.ones(input_ids.shape, device=self.device)
                     past = None
-                    while(len(generated_sequence) < 20):
+                    while(len(generated_sequence) < 50):
                         out = self.model(
                             input_ids,
                             # attention_mask=attn_mask,
@@ -328,31 +328,19 @@ class Predictor:
                         generated_sequence, distributions, field
                     )
 
-                    fields_dict[field] = dict(
+                    attributes_dict[field] = dict(
                         value=value.strip(),
                         confidence=np.round(np.float(confidence), 2),
                         fixed=False
                     )
 
-                table_json.append(
-                    dict(
-                        id=it,
-                        GSE=input_dict['GSE'],
-                        GSM=input_dict['GSM'],
-                        input=self.tokenizer.decode(
-                            self.tokenizer.encode(
-                                input_dict['input_text'].lower(),
-                                truncation=True,
-                                max_length=self.MAX_LEN
-                            )
-                        ),
-                        fields=fields_dict
-                    )
+                outputs.append(
+                    attributes_dict
                 )
         del self.model
         with torch.cuda.device(self.device):
             torch.cuda.empty_cache()
-        return table_json
+        return outputs
 
     def extract_values(self, text_ids, distributions, field):
         generated_sequence = np.array(text_ids)

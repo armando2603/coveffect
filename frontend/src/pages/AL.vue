@@ -25,9 +25,16 @@
               :virtual-scroll-sticky-size-start="48"
               my-sticky-virtscroll-table
               v-model:selected="selected"
+              :pagination='pagination'
               selection="single"
               @update:selected='loadSelection'
-              />
+              >
+                <template v-slot:body-cell-warns="props">
+                  <q-td key='warns' :props="props">
+                    {{count_warns(props.row)}}
+                  </q-td>
+                </template>
+              </q-table>
             </div>
           </q-card-section>
         </q-card>
@@ -199,22 +206,11 @@
 <script>
 import { ref } from 'vue'
 import { api, apiGPU } from 'boot/axios'
-const columns = [
-  { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
-  { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
-  { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
-  { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
-  { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
-  // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
-  { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' }
-  // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
-]
 export default {
   name: 'AL',
   setup () {
     return {
       paperList: ref([]),
-      columns,
       currentPaper: ref(0),
       showList: ref(false),
       predictions: ref([
@@ -231,23 +227,42 @@ export default {
       selected: ref([]),
       highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
       feedback_list: ref([]),
-      saliency_maps: ref([])
+      saliency_maps: ref([]),
+      output_attributes: ref([
+        'mutation',
+        'effect',
+        'level'
+      ]),
+      pagination: {
+        rowsPerPage: 200,
+        sortBy: 'warns',
+        descending: true
+      },
+      columns: [
+        { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+        { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
+        { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
+        { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
+        { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
+        // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
+        { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
+        { name: 'warns', label: 'Warns', sortable: true, align: 'center' }
+        // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
+      ]
     }
   },
   methods : {
     extraction () {
-      console.log('qua ci arrivo')
       apiGPU.post('/extract_attributes',
       {
         input: this.paperList[this.selected[0]['index']].abstract,
-        output_attributes: ['mutation name']
+        output_attributes: this.output_attributes
       }).then( (response) => {
         this.predictions =  JSON.parse(JSON.stringify(response.data.outputs))
-        this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
-        this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
-        this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
+        // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
+        // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
+        // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
         this.saliency_maps = response.data.saliency_map
-        const index = 0
         this.visualize(0)
       }).catch((error) => (error.message))
     },
@@ -260,8 +275,33 @@ export default {
       // }
       this.lastIndex = index
       this.insertedValue = ''
-      this.highlighted_abstract = this.saliency_maps[0][index]
+      this.highlighted_abstract = this.saliency_maps[index][0]
 
+    },
+    generateTable () {
+      let abstract_list = []
+      for ( const paper of this.paperList) {
+        abstract_list.push(paper.abstract)
+      }
+      apiGPU.post(
+        '/generateTable',
+        { output_attributes: this.output_attributes, inputs: abstract_list }
+      ).then( (response) => {
+        const extracted_values_list = response.data
+        for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          this.paperList[index]['extracted_values'] = extracted_values
+        }
+      }).catch( (error) => error.message)
+    },
+    count_warns (row) {
+      if (!Object.keys(row).includes('extracted_values')) return 0
+      var nWarn = 0
+      for (var attribute of this.output_attributes) {
+        if (row.extracted_values[attribute].confidence < this.redThreshold) {
+          nWarn += 1
+        }
+      }
+      return nWarn
     },
     getOutputColor (confidence) {
       if (confidence > this.greenThreshold) return 'green-3'
@@ -353,7 +393,16 @@ export default {
     api.get(
       '/paperlist'
     ).then((response) => {
+      // let temp_paper_list = response.data.paper_list
+      // let extracted_values = {}
+      // for (const attribute of this.output_attributes){
+      //     extracted_values[attribute] = {'confidence': 1}
+      //   }
+      // for (const index in temp_paper_list) {
+      //   temp_paper_list[index]['extracted_values'] = extracted_values
+      // }
       this.paperList = response.data.paper_list
+      this.generateTable()
       this.resetPage()
     }).catch((error) => (error.message))
   }
