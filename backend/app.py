@@ -52,23 +52,24 @@ def saveFeedbacks():
 
 @app.route("/fixedPapers", methods=['POST'])
 def fixedPapers():
-    fixed_papers = request.get_json()['fixed_papers']
-    if path.isfile('api/local_data/fixed_papers.json'):
-        with open('api/local_data/fixed_papers.json') as f:
-            old_fixed_papers = json.load(f)
-        fixed_papers = old_fixed_papers + fixed_papers
-        with open('api/local_data/fixed_papers.json', 'w') as f:
-            json.dump(fixed_papers, f) 
-    else:
-        with open('api/local_data/fixed_papers.json', 'w') as f:
-            json.dump(fixed_papers, f) 
-    return jsonify({'msg': 'error'})
-    # if request.method == 'GET':
-    #     if path.isfile('api/local_data/fixed_papers.json'):
-    #         with open('api/local_data/fixed_papers.json') as f:
-    #             return jsonify(json.load(f))
-    #     else:
-    #         return jsonify([])
+    if request.method == 'POST':
+        fixed_papers = request.get_json()['fixed_papers']
+        if path.isfile('api/local_data/fixed_papers.json'):
+            with open('api/local_data/fixed_papers.json') as f:
+                old_fixed_papers = json.load(f)
+            fixed_papers = old_fixed_papers + fixed_papers
+            with open('api/local_data/fixed_papers.json', 'w') as f:
+                json.dump(fixed_papers, f) 
+        else:
+            with open('api/local_data/fixed_papers.json', 'w') as f:
+                json.dump(fixed_papers, f) 
+        return jsonify({'msg': 'error'})
+    if request.method == 'GET':
+        if path.isfile('api/local_data/fixed_papers.json'):
+            with open('api/local_data/fixed_papers.json') as f:
+                return jsonify(json.load(f))
+        else:
+            return jsonify([])
 
 @app.route("/search", methods=['POST'])
 def search():

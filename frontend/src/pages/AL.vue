@@ -516,7 +516,7 @@ export default {
     storeFixedPapers () {
       api.post(
         '/fixedPapers',
-        { fixed_papers: this.fixed_papers }
+        { fixed_papers: this.fixedPapers }
       ).catch( (error) => (error.message))
     }
   },
