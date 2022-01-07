@@ -1,7 +1,7 @@
 # Backend gitignore
 __pycache__/
 venv/
-paper_list.json
+*.json
 # Frontend gitignore
 .vscode
 .DS_Store
@@ -40,3 +40,5 @@ yarn-error.log*
 
 # Annoy index files
 *.ann
+*.seg
+*.toc
