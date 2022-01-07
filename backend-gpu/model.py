@@ -67,7 +67,7 @@ class Predictor:
 
         self.model.resize_token_embeddings(len(self.tokenizer))
         # self.name_model = 'checkpoint_4-epoch=14-val_loss=0.306.ckpt'
-        self.name_model = 'only-mutation-epoch=11.ckpt'
+        self.name_model = 'one-mutation-epoch=10.ckpt'
         checkpoint = torch.load('api/Checkpoints/' + self.name_model, map_location='cpu')
         if 'state_dict' in checkpoint.keys():
             state_dict = checkpoint['state_dict']

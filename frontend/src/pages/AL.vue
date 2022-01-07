@@ -438,8 +438,11 @@ export default {
       ).catch( (error) => (error.message))
       this.loadingRetraining = true
       const outputs = []
+      // for (const output of this.editable_predictions) {
+      //   if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })
+      // }
       for (const output of this.editable_predictions) {
-        if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })
+        outputs.push({ attribute: output.attribute, value: output.value })
       }
       apiGPU.post(
         '/saveAndTrain',
@@ -450,11 +453,7 @@ export default {
       ).then((response) => {
         const inputList = []
         for (const row of this.paperList) {
-          if (row.index != this.currentPaper) {
-            inputList.push({
-              input_text: row.abstract,
-            })
-          }
+          inputList.push(row.abstract)
         }
         // TODO: aggiungi il sample modificato alla lista dei sample modificati
 
@@ -465,7 +464,6 @@ export default {
           { output_attributes: this.output_attributes, inputs: inputList }
         ).then((response) => {
           // this.dataset_json[this.datasetType] = response.data
-          const newTable = response.data
           // for (const [index, row] of this.paperList.entries()) {
           //   for (const attribute of this.output_attributes) {
           //     if (this.paperList[index].extracted_values[attribute].fixed) {
@@ -481,11 +479,15 @@ export default {
           const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
           correctedRow.index = this.fixedPapers.length
           this.fixedPapers.push(correctedRow)
-          for (const [index, row] of newTable.entries()) {
-            newTable[index].index = index
+          const extracted_values_list = response.data
+          for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            this.paperList[index]['extracted_values'] = extracted_values
+            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
           }
-          this.paperList = newTable
-          console.log('dovrebbe aver salvato')
+          this.paperList.splice(this.currentPaper, 1)
+          for (const [newIndex, row] of this.paperList.entries()) {
+            this.paperList[newIndex].index = newIndex
+          }
           this.storeFixedPapers()
           this.resetPage()
           this.confirmSaveAndTrain = false
@@ -513,7 +515,7 @@ export default {
     },
     storeFixedPapers () {
       api.post(
-        '/FixedPapers',
+        '/fixedPapers',
         { fixed_papers: this.fixed_papers }
       ).catch( (error) => (error.message))
     }
