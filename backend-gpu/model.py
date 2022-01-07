@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import Sequence
 import numpy as np
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config
@@ -164,7 +165,7 @@ class Predictor:
                 # attn_mask_value = torch.zeros(1, 0, device=self.device)
                 # is_value = False
                 # attn_mask = torch.ones(input_ids.shape, device=self.device)
-                while(len(generated_sequence) < 30):
+                while(len(generated_sequence) < 50):
 
                     inputs_embeds, token_ids_tensor_one_hot = \
                         self._get_embeddings(input_ids[0])
@@ -268,7 +269,7 @@ class Predictor:
                 prediction_list = []
                 attributes_dict = dict()
                 pre_input_ids = self.tokenizer.encode(
-                    input_text.lower(),
+                    input_text,
                     return_tensors='pt',
                     truncation=True,
                     max_length=self.MAX_LEN
@@ -319,6 +320,7 @@ class Predictor:
                         if predicted_token_tensor == end_id:
                             break
                     #print(self.tokenizer.decode(generated_sequence))
+                    generated_sequence = [ids.cpu().numpy() for ids in generated_sequence]
                     prediction_list.append(generated_sequence)
                     distributions = [
                         distribution.cpu().numpy()
@@ -337,6 +339,8 @@ class Predictor:
                 outputs.append(
                     attributes_dict
                 )
+                print()
+                print(attributes_dict)
         del self.model
         with torch.cuda.device(self.device):
             torch.cuda.empty_cache()

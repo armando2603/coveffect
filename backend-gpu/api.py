@@ -2,6 +2,10 @@ import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model import Predictor
+import json
+import datetime
+import time
+from os import path
 
 
 app = Flask(__name__)
@@ -136,6 +140,24 @@ def generateTable():
     attributes = data['output_attributes']
     outputs = pred.generateTable(inputs, attributes)
     return jsonify(outputs)
+
+@app.route('/saveAndTrain', methods=['POST'])
+def SaveAndTrain():
+    data = request.get_json()
+    input_text = data['input_text']
+    outputs = data['outputs']
+    output_list = []
+    field_list = []
+    for output in outputs:
+        output_list.append(' ' + output['value'] + '<EOS>')
+        field_list.append(str(output['attribute']) + ':')
+    pred.onlineLearning(input_text, output_list, field_list)
+    return 'okay'
+
+@app.route('/getGenerateStatus', methods=['GET'])
+def getGenerateStatus():
+    time.sleep(2)
+    return jsonify(pred.status)
 
 if __name__ == '__main__':
     import argparse

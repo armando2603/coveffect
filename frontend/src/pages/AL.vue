@@ -25,15 +25,10 @@
               :virtual-scroll-sticky-size-start="48"
               my-sticky-virtscroll-table
               v-model:selected="selected"
-              :pagination='pagination'
+              v-model:pagination='pagination'
               selection="single"
               @update:selected='loadSelection'
               >
-                <template v-slot:body-cell-warns="props">
-                  <q-td key='warns' :props="props">
-                    {{count_warns(props.row)}}
-                  </q-td>
-                </template>
               </q-table>
             </div>
           </q-card-section>
@@ -99,7 +94,7 @@
           </q-card-section>
           <q-card-section>
             <div class='my-outputs row'>
-              <div style="width: 133px;height: auto" class='' v-for="(prediction, index) in predictions" @click="visualize(index)"  :key="prediction">
+              <div style="width: 133px;height: auto" class='' v-for="(prediction, index) in editable_predictions" @click="visualize(index)"  :key="prediction">
                 <div class='q-pa-sm'>
                 <q-field
                 :class="index===lastIndex?'output-field q-field--focused':'output-field'"
@@ -108,7 +103,7 @@
                 stack-label
                 outlined
                 dense
-                :bg-color='getOutputColor(prediction.confidence)'
+                :bg-color='getOutputColor(prediction)'
                 :label="prediction.attribute" >
                   <template v-slot:control>
                     <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" tabindex="0">
@@ -129,9 +124,45 @@
           </q-card-section>
           </div>
           <q-card-section class="row justify-evenly">
-            <q-btn unelevate color='primary' label='save' @click="saveFeedbacks"/>
+            <q-btn unelevate color='primary' label='save' @click="confirmSaveAndTrain = true"/>
           </q-card-section>
         </q-card>
+        <q-dialog v-model="confirmSaveAndTrain" persistent>
+          <q-card style="width: 350px">
+            <q-card-section>
+              <div class='justify-evenly row'>
+                <div class="text-h6 text-primary q-pb-sm q-pl-md">Save and Retrain</div>
+              </div>
+            </q-card-section>
+            <q-card-section class="row justify-evenly" v-if='loadingRetraining'>
+              <q-spinner color="primary" size="3em" />
+            </q-card-section>
+            <q-card-section class="row justify-evenly" v-if='loadingRegenerating'>
+              <q-circular-progress
+                show-value
+                class=""
+                :value="loadStatus"
+                size="5em"
+                font-size="16px"
+                color="primary"
+              >
+              {{ loadStatus }}%
+              </q-circular-progress>
+            </q-card-section>
+            <q-card-section class="row justify-evenly">
+              <span v-if='!loadingRegenerating && !loadingRetraining' class="q-ml-sm">You want to submit your corrections??</span>
+              <span v-if='loadingRegenerating' class="q-ml-sm">Updating the table...</span>
+              <span v-if='loadingRetraining' class="q-ml-sm">Training the model...</span>
+              <!-- <span v-if='missingEdit' class="q-ml-sm">Please edit or confirm all red and yellow values</span> -->
+              <!-- <span v-if='zeroWarns' class="q-ml-sm" style='text-align: center'>There are no more critical samples, now you can inspect the remaining samples and save all the remaining samples  with the 'Save All' button. Once all samples are saved you can download them with the 'Export' button  </span> -->
+            </q-card-section>
+
+            <q-card-actions v-if='!loadingRegenerating && !loadingRetraining' class="row justify-evenly">
+              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;confirmSaveAndTrain=false'/>
+              <q-btn class="q-pb-sm" flat label="Yes" @click='saveAndTrain()' color="primary"/>
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
         <q-card class="col-3 column justify-evenly">
           <q-card-section class="row justify-evenly">
             <div class="text-h5">Editor</div>
@@ -140,14 +171,14 @@
             <q-field borderless label="Selected Attribute:" label-color='primary' stack-label>
               <template v-slot:control>
                 <div class="self-center full-width no-outline" tabindex="0">
-                  {{ lastIndex === 'no_index' ? 'Select a field' : predictions[lastIndex].attribute }}
+                  {{ lastIndex === 'no_index' ? 'Select a field' : editable_predictions[lastIndex].attribute }}
                 </div>
               </template>
             </q-field>
             <q-field borderless label="Confidence:" label-color='primary' stack-label>
               <template v-slot:control>
                 <div class="self-center full-width no-outline" tabindex="0">
-                  {{ lastIndex === 'no_index' ? 'Select a field' : predictions[lastIndex].confidence }}
+                  {{ lastIndex === 'no_index' ? 'Select a field' : editable_predictions[lastIndex].confidence }}
                 </div>
               </template>
             </q-field>
@@ -213,11 +244,7 @@ export default {
       paperList: ref([]),
       currentPaper: ref(0),
       showList: ref(false),
-      predictions: ref([
-        { attribute: 'Mutation Type', value: "strain", confidence: 1 },
-        { attribute: 'Name', value: "v_200n", confidence: 0.5 },
-        { attribute: 'Effect', value: "trasmissibility", confidence: 0.7 }
-      ]),
+      editable_predictions: ref([]),
       lastIndex: ref('no_index'),
       greenThreshold: ref(0.8),
       redThreshold: ref(0.6),
@@ -233,11 +260,11 @@ export default {
         'effect',
         'level'
       ]),
-      pagination: {
+      pagination: ref({
         rowsPerPage: 200,
         sortBy: 'warns',
         descending: true
-      },
+      }),
       columns: [
         { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
         { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
@@ -246,19 +273,25 @@ export default {
         { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
         // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
-        { name: 'warns', label: 'Warns', sortable: true, align: 'center' }
+        { name: 'warns', label: 'Warns', field: 'warns', sortable: true, align: 'center' }
         // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
-      ]
+      ],
+      confirmSaveAndTrain: ref(false),
+      loadingRetraining: ref(false),
+      loadingRegenerating: ref(false),
+      loadStatus: ref(0),
+      edited_Papers: ref([]),
+      fixedPapers: ref([])
     }
   },
   methods : {
-    extraction () {
+    extraction (index) {
       apiGPU.post('/extract_attributes',
       {
-        input: this.paperList[this.selected[0]['index']].abstract,
+        input: this.paperList[index].abstract,
         output_attributes: this.output_attributes
       }).then( (response) => {
-        this.predictions =  JSON.parse(JSON.stringify(response.data.outputs))
+        this.editable_predictions =  JSON.parse(JSON.stringify(response.data.outputs))
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
@@ -267,10 +300,10 @@ export default {
       }).catch((error) => (error.message))
     },
     visualize (index) {
-      // To Fix later
-      // if (this.last_index !== index) {
+      // if (this.lastIndex !== index) {
       //   this.$nextTick(() => {
-      //     this.$refs.outputField[index].click()
+      //     console.log(this.$refs.editables_2)
+      //     this.$refs.editables_2.click()
       //   })
       // }
       this.lastIndex = index
@@ -290,11 +323,13 @@ export default {
         const extracted_values_list = response.data
         for ( const [index, extracted_values] of extracted_values_list.entries()) {
           this.paperList[index]['extracted_values'] = extracted_values
+          this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
         }
+        this.resetPage()
       }).catch( (error) => error.message)
     },
     count_warns (row) {
-      if (!Object.keys(row).includes('extracted_values')) return 0
+      if (!Object.keys(row).includes('extracted_values')) return row.index
       var nWarn = 0
       for (var attribute of this.output_attributes) {
         if (row.extracted_values[attribute].confidence < this.redThreshold) {
@@ -303,10 +338,11 @@ export default {
       }
       return nWarn
     },
-    getOutputColor (confidence) {
-      if (confidence > this.greenThreshold) return 'green-3'
+    getOutputColor (prediction) {
+      if (prediction.fixed) {return 'info'}
+      if (prediction.confidence > this.greenThreshold) return 'green-3'
       else {
-        if (confidence < this.redThreshold) return 'red-3'
+        if (prediction.confidence < this.redThreshold) return 'red-3'
         else return 'orange-3'
       }
     },
@@ -353,12 +389,13 @@ export default {
       // this.$refs.input.showPopup()
     },
     editValue () {
-      this.predictions[this.lastIndex].value = this.insertedValue
-      this.predictions[this.lastIndex].confidence = 1
+      this.editable_predictions[this.lastIndex].value = this.insertedValue
+      this.editable_predictions[this.lastIndex].confidence = 1
+      this.editable_predictions[this.lastIndex].fixed = true
       this.feedback_list.push(
         {
           value: this.insertedValue,
-          attribute: this.predictions[this.lastIndex].attribute,
+          attribute: this.editable_predictions[this.lastIndex].attribute,
           doi: this.selected[0].doi,
           cord_uid: this.selected[0].cord_uid,
           abstract: this.selected[0].abstract
@@ -367,26 +404,118 @@ export default {
     },
     loadSelection () {
       this.currentPaper = this.selected[0].index
-      this.extraction()
+      this.extraction(this.currentPaper)
       // console.log(this.selected[0])
     },
     resetPage () {
       this.selected = [this.paperList[0]]
       this.insertedValue = ''
       this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
-      this.predictions = []
+      this.editable_predictions = []
       this.feedback_list = []
-      this.extraction()
+      const maxStatus = this.getSampleWithMaxWarns()
+      if (maxStatus.index !== null) {
+        this.selected = [{ index: maxStatus.index }]
+      }
+      this.currentPaper = maxStatus.index
+      this.extraction(this.currentPaper)
     },
-    saveFeedbacks () {
-      console.log(this.feedback_list)
+    getSampleWithMaxWarns () {
+      let max = -1
+      let maxId = null
+      for (const [index, row] of this.paperList.entries()) {
+        if (this.count_warns(row) > max) {
+          max = this.count_warns(row)
+          maxId = index
+        }
+      }
+      return { index: maxId, max: max }
+    },
+    saveAndTrain () {
       api.post(
         '/saveFeedbacks',
         { feedback_list: this.feedback_list }
       ).catch( (error) => (error.message))
+      this.loadingRetraining = true
+      const outputs = []
+      for (const output of this.editable_predictions) {
+        if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })
+      }
+      apiGPU.post(
+        '/saveAndTrain',
+        {
+          input_text: this.paperList[this.lastIndex].abstract,
+          outputs: outputs
+        }
+      ).then((response) => {
+        const inputList = []
+        for (const row of this.paperList) {
+          if (row.index != this.currentPaper) {
+            inputList.push({
+              input_text: row.abstract,
+            })
+          }
+        }
+        // TODO: aggiungi il sample modificato alla lista dei sample modificati
+
+        this.loadingRetraining = false
+        this.loadingRegenerating = true
+        apiGPU.post(
+          '/generateTable',
+          { output_attributes: this.output_attributes, inputs: inputList }
+        ).then((response) => {
+          // this.dataset_json[this.datasetType] = response.data
+          const newTable = response.data
+          // for (const [index, row] of this.paperList.entries()) {
+          //   for (const attribute of this.output_attributes) {
+          //     if (this.paperList[index].extracted_values[attribute].fixed) {
+          //       // console.log('uno fixato')
+          //       // console.log(row.fields[field].value)
+          //       newTable[index].fields[field].value = row.fields[field].value
+          //       newTable[index].fields[field].confidence = row.fields[field].confidence
+          //       newTable[index].fields[field].fixed = true
+          //     }
+          //   }
+          //   this.loadingRegenerating = false
+          // }
+          const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+          correctedRow.index = this.fixedPapers.length
+          this.fixedPapers.push(correctedRow)
+          for (const [index, row] of newTable.entries()) {
+            newTable[index].index = index
+          }
+          this.paperList = newTable
+          console.log('dovrebbe aver salvato')
+          this.storeFixedPapers()
+          this.resetPage()
+          this.confirmSaveAndTrain = false
+        }).catch(error => {
+          console.log(error.message)
+          this.confirmSaveAndTrain = false
+        })
+        this.loadStatus = 0
+        this.getLoadStatus()
+      }).catch(error => {
+        console.log(error.message)
+        this.loadingRetraining = false
+      })
       // seleziono paper subito dopo
-      this.selected = [this.paperList[this.selected[0].index + 1]]
-      this.loadSelection()
+      // this.selected = [this.paperList[this.selected[0].index + 1]]
+      // this.loadSelection()
+    },
+    getLoadStatus () {
+      apiGPU.get('/getGenerateStatus')
+        .then(responde => {
+          this.loadStatus = Math.round(responde.data)
+          console.log(this.loadStatus)
+          if (this.loadStatus < 100) this.getLoadStatus()
+        }).catch(error => console.log(error))
+    },
+    storeFixedPapers () {
+      api.post(
+        '/FixedPapers',
+        { fixed_papers: this.fixed_papers }
+      ).catch( (error) => (error.message))
     }
   },
   created () {
@@ -403,7 +532,6 @@ export default {
       // }
       this.paperList = response.data.paper_list
       this.generateTable()
-      this.resetPage()
     }).catch((error) => (error.message))
   }
 }
