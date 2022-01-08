@@ -1,6 +1,35 @@
 <template>
   <q-page padding class="row items-strech">
     <div class="col-12 column no-wrap">
+      <q-dialog v-model='showFixedList'>
+        <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
+          <q-card-section class="row justify-between">
+            <div class="text-h5">Fixed Paper List</div>
+            <div class="col-1 justify-end row">
+              <q-btn class='' icon="close" flat round dense v-close-popup />
+            </div>
+          </q-card-section>
+          <q-card-section class="column" style="height: 100%">
+            <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
+              <q-table
+              style="flex-grow: 1;overflow: auto"
+              class="my-sticky-virtscroll-table"
+              :columns="fixedColumns"
+              :rows="fixedPapers"
+              virtual-scroll
+              wrap-cells
+              dense
+              separator="cell"
+              row-key="index"
+              :rows-per-page-options="[0]"
+              :virtual-scroll-sticky-size-start="48"
+              my-sticky-virtscroll-table
+              >
+              </q-table>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
       <q-dialog v-model='showList'>
         <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
           <q-card-section class="row justify-between">
@@ -34,15 +63,27 @@
           </q-card-section>
         </q-card>
       </q-dialog>
-      <div class="col-1 column justify-evenly">
-          <div class="row justify-end">
-            <q-btn
-              icon='menu'
-              style="width:50px"
-              @click="showList = true"
-              color="primary"
-            />
-          </div>
+      <div class="row justify-end">
+        <div class="col-1 column justify-evenly">
+            <div class="row justify-end">
+              <q-btn
+                label="Saved Samples"
+                style="width:150px"
+                @click="showFixedList = true"
+                color="primary"
+              />
+            </div>
+        </div>
+        <div class="col-1 column justify-evenly">
+            <div class="row justify-end">
+              <q-btn
+                icon='menu'
+                style="width:50px"
+                @click="showList = true"
+                color="primary"
+              />
+            </div>
+        </div>
       </div>
       <div class="col-4 q-pt-md">
         <q-card style="height: 100%" class="column no-wrap">
@@ -241,6 +282,7 @@ export default {
   name: 'AL',
   setup () {
     return {
+      showFixedList: ref(false),
       paperList: ref([]),
       currentPaper: ref(0),
       showList: ref(false),
@@ -274,6 +316,19 @@ export default {
         // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
         { name: 'warns', label: 'Warns', field: 'warns', sortable: true, align: 'center' }
+        // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
+      ],
+      fixedColumns: [
+        { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+        { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
+        { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
+        { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
+        { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
+        // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
+        { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
+        { name: 'mutation', label: 'Mutation', field: (row) => row.extracted_values.mutation.value, sortable: true, align: 'left' },
+        { name: 'effect', label: 'Effect', field: (row) => row.extracted_values.effect.value, sortable: true, align: 'left' },
+        { name: 'level', label: 'Level', field: (row) => row.extracted_values.level.value, sortable: true, align: 'left' }
         // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
       ],
       confirmSaveAndTrain: ref(false),
@@ -524,14 +579,11 @@ export default {
     api.get(
       '/paperlist'
     ).then((response) => {
-      // let temp_paper_list = response.data.paper_list
-      // let extracted_values = {}
-      // for (const attribute of this.output_attributes){
-      //     extracted_values[attribute] = {'confidence': 1}
-      //   }
-      // for (const index in temp_paper_list) {
-      //   temp_paper_list[index]['extracted_values'] = extracted_values
-      // }
+      api.get(
+        '/fixedPapers'
+      ).then( (response) => {
+        this.fixedPapers = response.data
+      })
       this.paperList = response.data.paper_list
       this.generateTable()
     }).catch((error) => (error.message))

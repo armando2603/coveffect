@@ -50,7 +50,7 @@ def saveFeedbacks():
             json.dump(feedbacks, f) 
     return jsonify({'msg': 'error'})
 
-@app.route("/fixedPapers", methods=['POST'])
+@app.route("/fixedPapers", methods=['POST', 'GET'])
 def fixedPapers():
     if request.method == 'POST':
         fixed_papers = request.get_json()['fixed_papers']
