@@ -61,7 +61,6 @@ export default {
         { query: this.keywordText}
       ).then((response) => {
         // console.log(response.data[0])
-        print(response.data)
         for (const element of response.data) {
           let row = {}
           for (const attribute of this.attributes) {
