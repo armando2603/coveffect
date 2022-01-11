@@ -91,7 +91,10 @@
             <div class="text-h5">Abstract</div>
           </q-card-section>
           <q-card-section class="column" style="overflow: auto; flex-grow: 1">
-            <div class="scroll overflow-auto">
+            <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
+              <q-spinner color="primary" size="2em" />
+            </div>
+            <div v-if='!loadGpt2' class="scroll overflow-auto">
               <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
                 <mark v-for="element in highlighted_abstract" :key="element" :class="element.color">
                   {{ element.text }}
@@ -134,11 +137,14 @@
             <div class="text-h5">Extracted Values</div>
           </q-card-section>
           <q-card-section>
-            <div class='my-outputs row'>
+            <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
+              <q-spinner color="primary" size="4em" />
+            </div>
+            <div v-if='!loadGpt2' class='my-outputs row'>
               <div style="width: 133px;height: auto" class='' v-for="(prediction, index) in editable_predictions" @click="visualize(index)"  :key="prediction">
                 <div class='q-pa-sm'>
                 <q-field
-                :class="index===lastIndex?'output-field q-field--focused':'output-field'"
+                :class="index===lastIndex?'output-field':'output-field'"
                 label-color="grey-10"
                 color='indigo-8'
                 stack-label
@@ -336,11 +342,13 @@ export default {
       loadingRegenerating: ref(false),
       loadStatus: ref(0),
       edited_Papers: ref([]),
-      fixedPapers: ref([])
+      fixedPapers: ref([]),
+      loadGpt2: ref(false)
     }
   },
   methods : {
     extraction (index) {
+      this.loadGpt2 = true
       apiGPU.post('/extract_attributes',
       {
         input: this.paperList[index].abstract,
@@ -351,6 +359,7 @@ export default {
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
         this.saliency_maps = response.data.saliency_map
+        this.loadGpt2 = false
         this.visualize(0)
       }).catch((error) => (error.message))
     },
@@ -361,8 +370,9 @@ export default {
       //     this.$refs.editables_2.click()
       //   })
       // }
+
       this.lastIndex = index
-      this.insertedValue = ''
+      this.insertedValue = this.editable_predictions[index].value
       this.highlighted_abstract = this.saliency_maps[index][0]
 
     },
@@ -458,6 +468,7 @@ export default {
       )
     },
     loadSelection () {
+      this.showList = false
       this.currentPaper = this.selected[0].index
       this.extraction(this.currentPaper)
       // console.log(this.selected[0])
@@ -576,6 +587,7 @@ export default {
     }
   },
   created () {
+    this.loadGpt2 = true
     api.get(
       '/paperlist'
     ).then((response) => {
