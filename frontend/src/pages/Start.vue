@@ -44,10 +44,9 @@
         title="Papers List"
         wrap-cells
         virtual-scroll
-        dense
-        my-sticky-virtscroll-table
         :rows-per-page-options="[0]"
         separator="cell"
+        :virtual-scroll-item-size="48"
         :virtual-scroll-sticky-size-start="48"
         :rows="rows"
         :columns="columns"
@@ -65,6 +64,40 @@
             </q-td>
           </template>
         </q-table>
+        <q-dialog v-model='showSimilars'>
+          <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
+            <q-card-section class="row justify-between">
+              <div class="text-h5">Similar Papers</div>
+              <div class="col-1 justify-end row">
+                <q-btn class='' icon="close" flat round dense v-close-popup />
+              </div>
+            </q-card-section>
+            <q-card-section class="column" style="height: 100%">
+              <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
+                <q-table
+                style="flex-grow: 1;overflow: auto"
+                class="my-sticky-virtscroll-table"
+                :columns="columns"
+                :rows="similarPapers"
+                virtual-scroll
+                wrap-cells
+                separator="cell"
+                row-key="index"
+                :rows-per-page-options="[0]"
+                :virtual-scroll-sticky-size-start="48"
+                my-sticky-virtscroll-table
+                :visible-columns="similarVisibleColumns"
+                >
+                  <template v-slot:body-cell-keep="props">
+                    <q-td key='keep' :props="props">
+                      <q-checkbox v-model="props.row.keep" />
+                    </q-td>
+                  </template>
+                </q-table>
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
       </div>
     </div>
   </q-page>
@@ -111,14 +144,22 @@ const columns = [
 ]
 
 const visible_columns = [
-  "cord_uid",
-  "similarto",
+  // "cord_uid",
   "title",
   "authors",
   "abstract",
   "journal",
   "keep",
   "similar"
+]
+
+const similarVisibleColumns = [
+  // "cord_uid",
+  "title",
+  "authors",
+  "abstract",
+  "journal",
+  "keep",
 ]
 
 export default defineComponent({
@@ -129,7 +170,10 @@ export default defineComponent({
       alert : ref(false),
       columns,
       rows : ref([]),
-      visible_columns
+      visible_columns,
+      showSimilars: ref(false),
+      similarPapers: ref([]),
+      similarVisibleColumns
     }
   },
   methods : {
@@ -194,16 +238,18 @@ export default defineComponent({
         { by: by, id: id}
       ).then( (response) => {
         let similars = response.data
-        // console.log(similars)
-        let current_index = row.index
+        console.log(similars)
+        let current_index = 0
         // console.log(index)
         for (let element of similars) {
           element['keep'] = true
-          element['similar_to'] = id
-          this.rows.splice(current_index + 1, 0, element)
-          current_index += 1
+          // element['similar_to'] = id
+          if (element.doi !== "") {
+            this.similarPapers.push(element)
+          }
         }
-        this.generateIndex(this.rows)
+        this.showSimilars = true
+        this.generateIndex(this.similarPapers)
       }).catch(error => (error.message))
     }
   },
