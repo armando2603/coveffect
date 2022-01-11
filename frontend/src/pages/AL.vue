@@ -147,7 +147,7 @@
                 :bg-color='getOutputColor(prediction)'
                 :label="prediction.attribute" >
                   <template v-slot:control>
-                    <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" tabindex="0">
+                    <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden" tabindex="0">
                       {{prediction.value}}
                     </div>
                   </template>
