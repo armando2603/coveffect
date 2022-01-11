@@ -62,12 +62,14 @@ export default {
       ).then((response) => {
         // console.log(response.data[0])
         for (const element of response.data) {
-          let row = {}
-          for (const attribute of this.attributes) {
-            row[attribute] = element[attribute]
+          if (element.doi !== "") {
+            let row = {}
+            for (const attribute of this.attributes) {
+              row[attribute] = element[attribute]
+            }
+            row['keep'] = true
+            this.paperList.push(row)
           }
-          row['keep'] = true
-          this.paperList.push(row)
         }
         this.generateIndex()
         api.post(
