@@ -18,7 +18,6 @@
               :rows="fixedPapers"
               virtual-scroll
               wrap-cells
-              dense
               separator="cell"
               row-key="index"
               :rows-per-page-options="[0]"
@@ -47,7 +46,6 @@
               :rows="paperList"
               virtual-scroll
               wrap-cells
-              dense
               separator="cell"
               row-key="index"
               :rows-per-page-options="[0]"
@@ -298,7 +296,16 @@ export default {
       redThreshold: ref(0.6),
       insertedValue: ref(''),
       filterOptions: ref([]),
-      stringOptions: ref([]),
+      stringOptions: ref({
+        mutation: [],
+        effect: ['risk_of_reinfection', 'viral_load',
+       'effectiveness_of_available_antiviral_drugs', 'binding_to_Abs',
+       'binding_to_host_receptor', 'protein_stability',
+       'sensitivity_to_convalescent_sera', 'viral_transmission',
+       'sensitivity_to_neutralizing_mAbs', 'protein_flexibility',
+       'infectivity', 'intraviral_protein_protein_interaction'],
+        level: ['higher', 'lower', 'unknown']
+      }),
       selected: ref([]),
       highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
       feedback_list: ref([]),
@@ -588,6 +595,11 @@ export default {
   },
   created () {
     this.loadGpt2 = true
+    api.get(
+      '/mutationValues'
+    ).then( (response) => {
+      this.stringOptions.mutation = response.data
+    }).catch( (error) => {error.message})
     api.get(
       '/paperlist'
     ).then((response) => {

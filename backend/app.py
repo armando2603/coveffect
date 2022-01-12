@@ -71,6 +71,15 @@ def fixedPapers():
         else:
             return jsonify([])
 
+@app.route("/mutationValues", methods=['GET'])
+def mutation_values():
+    if request.method == 'GET':
+        if path.isfile('api/local_data/mutation_values.json'):
+            with open('api/local_data/mutation_values.json') as f:
+                return jsonify(json.load(f))
+        else:
+            return jsonify([])
+
 @app.route("/search", methods=['POST'])
 def search():
     query = request.get_json()['query']

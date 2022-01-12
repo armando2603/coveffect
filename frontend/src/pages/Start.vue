@@ -41,7 +41,6 @@
         style="overflow: auto; flex-grow: 1"
         table-header-style="text-align: left"
         table-header-class="align-left"
-        title="Papers List"
         wrap-cells
         virtual-scroll
         :rows-per-page-options="[0]"
