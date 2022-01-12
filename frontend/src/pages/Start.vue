@@ -54,13 +54,39 @@
         :visible-columns="visible_columns"
         >
           <template v-slot:body-cell-keep="props">
-            <q-td key='keep' :props="props">
+            <q-td
+            key='keep'
+            :props="props"
+            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            >
               <q-checkbox v-model="props.row.keep" />
             </q-td>
           </template>
+          <template v-slot:body-cell-doi="props">
+            <q-td
+            key='doi'
+            :props="props"
+            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            >
+              <!-- <q-checkbox v-model="props.row.keep" /> -->
+              <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
+            </q-td>
+          </template>
           <template v-slot:body-cell-similar="props">
-            <q-td key='similar' :props="props">
+            <q-td
+            key='similar'
+            :props="props"
+            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            >
               <q-btn :disable="props.row.keep===false" unelevated dense size="sm" color="primary" label='find similars' @click="findSimilar(props.row)" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell="props">
+            <q-td
+              :props="props"
+              :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            >
+              {{props.value}}
             </q-td>
           </template>
         </q-table>
@@ -93,9 +119,21 @@
                       <q-checkbox v-model="props.row.keep" />
                     </q-td>
                   </template>
+                  <template v-slot:body-cell-doi="props">
+                    <q-td
+                    key='doi'
+                    :props="props"
+                    >
+                      <!-- <q-checkbox v-model="props.row.keep" /> -->
+                      <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
+                    </q-td>
+                  </template>
                 </q-table>
               </div>
             </q-card-section>
+            <div class="q-pb-md row justify-evenly">
+              <q-btn unelevate color="primary" label="add" @click="addSimilarSelection"/>
+            </div>
           </q-card>
         </q-dialog>
       </div>
@@ -130,10 +168,10 @@ import { api } from 'boot/axios';
 import { ref } from 'vue'
 
 const columns = [
-  { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+  { name: 'index', label: '#', field: 'index',required: true, align: 'left'},
   { name: 'cord_uid', label: 'Cord UID', field: 'cord_uid', align: 'center' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
-  { name: 'similarto', label: 'Similar To', field: 'similar_to', align: 'left' },
+  { name: 'similarto', label: 'Similar To', field: 'similar_to', align: 'center' },
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
@@ -145,6 +183,7 @@ const columns = [
 
 const visible_columns = [
   // "cord_uid",
+  "similarto",
   "title",
   "authors",
   "abstract",
@@ -173,7 +212,8 @@ export default defineComponent({
       visible_columns,
       showSimilars: ref(false),
       similarPapers: ref([]),
-      similarVisibleColumns
+      similarVisibleColumns,
+      similarRow: ref({})
     }
   },
   methods : {
@@ -224,6 +264,7 @@ export default defineComponent({
       ).catch(error => (error.message))
     },
     findSimilar (row) {
+      this.similarRow = row
       let by = ""
       let id = ""
       if (row.cord_uid === '') {
@@ -238,9 +279,8 @@ export default defineComponent({
         { by: by, id: id}
       ).then( (response) => {
         let similars = response.data
-        console.log(similars)
         let current_index = 0
-        // console.log(index)
+        this.similarPapers = []
         for (let element of similars) {
           element['keep'] = true
           // element['similar_to'] = id
@@ -251,14 +291,34 @@ export default defineComponent({
         this.showSimilars = true
         this.generateIndex(this.similarPapers)
       }).catch(error => (error.message))
+    },
+    addSimilarSelection () {
+      // console.log(similars)
+      let current_index = this.similarRow.index
+      // console.log(index)
+      for (let element of this.similarPapers) {
+        if (element.keep === true) {
+          element['keep'] = true
+          element['similar_to'] = this.similarRow.index
+          this.rows.splice(current_index + 1, 0, element)
+          current_index += 1
+        }
+      }
+      this.generateIndex(this.rows)
+      this.similarPapers = []
+      this.showSimilars = false
     }
   },
   created () {
     api.get(
       '/paperlist'
     ).then((response) => {
-      this.rows = response.data.paper_list
-      // console.log(this.rows[0])
+      // this.rows = response.data.paper_list
+      for (let row of response.data.paper_list) {
+        row['similar_to'] = ''
+        this.rows.push(row)
+      }
+      console.log(this.rows[0])
     }).catch(error => (error.message))
   }
 });
