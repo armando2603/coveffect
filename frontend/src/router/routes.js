@@ -4,14 +4,14 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/Home.vue') }
+      { path: '', name: 'home', component: () => import('pages/Home.vue') }
     ]
   },
   {
     path: '/start',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/Start.vue') }
+      { path: '', name: 'paperList', component: () => import('pages/Start.vue') }
     ]
   },
   {
@@ -25,7 +25,7 @@ const routes = [
     path: '/al',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/AL.vue') }
+      { path: '', name: 'AL', component: () => import('pages/AL.vue') }
     ]
   },
 

@@ -1,7 +1,24 @@
 <template>
   <q-page class="row items-strech">
     <div class="column col-12 no-wrap">
-      <div class="q-pa-md row justify-end no-wrap">
+      <q-dialog v-model="alert">
+        <q-card >
+          <q-card-section class="row justify-evenly">
+            <!-- <div class="text-h6 text-red-5">No Abstract Found</div> -->
+            <div class="text-h6 text-red-4">{{alertContent.title}}</div>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none row justify-evenly">
+            <!-- <div class="text-grey-7">The paper cannot be added</div> -->
+            <div class="text-grey-7">{{alertContent.body}}</div>
+          </q-card-section>
+
+          <q-card-actions align="center">
+            <q-btn flat label="OK" color="primary" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <!-- <div class="q-pa-md row justify-end no-wrap">
         <q-card class='row' style="width: 100%">
           <div class="q-pa-md col-8">
             <q-input v-model="doi" stack-label label="Insert a DOI" />
@@ -9,32 +26,11 @@
           <div class="column justify-center q-pa-sm">
             <q-btn class='' rounded icon='add' color='primary' @click='getPaper'/>
           </div>
-          <!-- <div class="column justify-center q-pa-sm">
-            <q-btn class='' rounded v-if='rows.length > 0 && selected.length > 0' icon='remove' color='negative' @click='removeSelection'/>
-          </div> -->
-          <!-- <div class="column justify-center q-pa-sm">
-            <q-btn class='' label='add seeds' color='primary' @click='getSeeds'/>
-          </div> -->
-          <q-dialog v-model="alert">
-            <q-card>
-              <q-card-section>
-                <div class="text-h6 text-red-5">No Abstract Found</div>
-              </q-card-section>
-
-              <q-card-section class="q-pt-none">
-                <div class="text-grey-7">The paper cannot be added</div>
-              </q-card-section>
-
-              <q-card-actions align="right">
-                <q-btn flat label="OK" color="primary" v-close-popup />
-              </q-card-actions>
-            </q-card>
-          </q-dialog>
         </q-card>
         <div class="column justify-center q-pl-md q-pr-md">
           <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
         </div>
-      </div>
+      </div> -->
       <div class="q-pa-md column" style="flex-grow: 1">
         <q-table
         class="my-sticky-virtscroll-table"
@@ -50,13 +46,31 @@
         :rows="rows"
         :columns="columns"
         row-key="index"
+        selection='multiple'
+        v-model:selected='selection'
+        v-model:pagination='pagination'
+
         :visible-columns="visible_columns"
         >
+          <template v-slot:top>
+            <div class="row justify-between" style="width: 100%">
+              <div class="text-h5 text-primary q-pl-md q-pr-md">{{'Results for : "' + $route.params.keyword + '"'}}</div>
+              <div class="col-4 row justify-end">
+                <q-btn class='' rounded icon='add' color='green-8' @click='showAddPaper=true'/>
+                <div class='q-pl-sm'>
+                  <q-btn rounded v-if='rows.length > 0' icon='remove' color='red-8' @click='removeSelection'/>
+                </div>
+                <div class="q-pl-sm">
+                  <q-btn class='' label="Export TSV" rounded no-caps color='primary' @click='exportTSV'/>
+                </div>
+              </div>
+            </div>
+          </template>
           <template v-slot:body-cell-keep="props">
             <q-td
             key='keep'
             :props="props"
-            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
             >
               <q-checkbox v-model="props.row.keep" />
             </q-td>
@@ -65,17 +79,27 @@
             <q-td
             key='doi'
             :props="props"
-            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
             >
               <!-- <q-checkbox v-model="props.row.keep" /> -->
               <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-similarto="props">
+            <q-td
+            key='similarto'
+            :props="props"
+            :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
+            >
+              <!-- <q-checkbox v-model="props.row.keep" /> -->
+              <a :href="'https://dx.doi.org/' + props.row.similar_to" target="_blank">{{props.row.similar_to}}</a>
             </q-td>
           </template>
           <template v-slot:body-cell-similar="props">
             <q-td
             key='similar'
             :props="props"
-            :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+            :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
             >
               <q-btn :disable="props.row.keep===false" unelevated dense size="sm" color="primary" label='find similars' @click="findSimilar(props.row)" />
             </q-td>
@@ -83,21 +107,44 @@
           <template v-slot:body-cell="props">
             <q-td
               :props="props"
-              :class="(props.row.similar_to !== '')?'bg-cyan-1 text-black':'bg-white text-black'"
+              :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
             >
               {{props.value}}
             </q-td>
           </template>
         </q-table>
+        <q-dialog v-model="showAddPaper">
+          <q-card style="width: 600px">
+            <q-card-section class="row justify-between">
+              <div class="text-h5 text-primary">Add Paper</div>
+              <div class="col-1 justify-end row">
+                <q-btn class='' icon="close" flat round dense v-close-popup />
+              </div>
+            </q-card-section>
+            <q-card-section>
+              <div class="q-pb-md row justify-evenly text-grey-9">Insert DOI of the paper you want to add</div>
+              <q-input v-model="doi" hint="example: 10.1101/2020.10.25.20219063" square outlined stack-label label="DOI" />
+            </q-card-section>
+            <q-card-actions align="center">
+              <div class="q-pb-sm">
+                  <q-btn rounded label="ADD"  @click="getPaper" color="primary" v-close-popup />
+              </div>
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+        <div class="q-pa-sm row justify-evenly">
+        <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
+        </div>
         <q-dialog v-model='showSimilars'>
           <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
             <q-card-section class="row justify-between">
-              <div class="text-h5">Similar Papers</div>
+              <div class="text-h5 text-primary">Similar Papers</div>
               <div class="col-1 justify-end row">
                 <q-btn class='' icon="close" flat round dense v-close-popup />
               </div>
             </q-card-section>
             <q-card-section class="column" style="height: 100%">
+              <div class="q-pb-md text-h6 row justify-evenly text-grey-7">Select relevant paper among the results</div>
               <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
                 <q-table
                 style="flex-grow: 1;overflow: auto"
@@ -112,6 +159,8 @@
                 :virtual-scroll-sticky-size-start="48"
                 my-sticky-virtscroll-table
                 :visible-columns="similarVisibleColumns"
+                selection='multiple'
+                v-model:selected='similarSelection'
                 >
                   <template v-slot:body-cell-keep="props">
                     <q-td key='keep' :props="props">
@@ -164,7 +213,8 @@
 <script>
 import { defineComponent } from "vue";
 import { api } from 'boot/axios';
-import { ref } from 'vue'
+import { ref } from 'vue';
+import { exportFile } from 'quasar'
 
 const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left'},
@@ -177,17 +227,20 @@ const columns = [
   // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
   { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
+   { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
   { name: 'similar', label: '', align: 'center' }
 ]
 
 const visible_columns = [
   // "cord_uid",
+  "index",
+  "doi",
   "similarto",
   "title",
   "authors",
   "abstract",
   "journal",
-  "keep",
+  "citations",
   "similar"
 ]
 
@@ -197,28 +250,51 @@ const similarVisibleColumns = [
   "authors",
   "abstract",
   "journal",
-  "keep",
+  // "keep",
 ]
 
+const alertTopics = {
+  paper_not_found: {
+    title: 'No Abstract Found',
+    body: 'The paper cannot be added'
+  },
+  paper_already_exist: {
+    title: 'Paper Already Exist',
+    body: 'The paper cannot be added'
+  }
+}
+
 export default defineComponent({
-  name: "PageIndex",
+  name: "paperList",
   setup () {
     return {
+      searchKeyword: ref(''),
       doi : ref(''),
       alert : ref(false),
       columns,
+      alertTopics,
       rows : ref([]),
       visible_columns,
       showSimilars: ref(false),
       similarPapers: ref([]),
       similarVisibleColumns,
-      similarRow: ref({})
+      similarRow: ref({}),
+      selection: ref([]),
+      similarSelection: ref([]),
+      alertContent : ref({ title: '', body: ''}),
+      showAddPaper: ref(false),
+      pagination: ref({
+        sortBy: 'index',
+        descending: false
+      })
     }
   },
   methods : {
     getPaper () {
       for (const element of this.rows) {
         if (element.doi === this.doi) {
+          this.alert = true
+          this.alertContent = this.alertTopics.paper_already_exist
           return
         }
       }
@@ -228,10 +304,13 @@ export default defineComponent({
         if (response.data['found'] == true) {
           this.rows.unshift(response.data['metadata'])
           this.rows[0].keep = true
+          this.rows[0]['similar_to'] = ''
+          this.rows[0]['added'] = true
           this.generateIndex(this.rows)
         }
         else{
           this.alert = true
+          this.alertContent = this.alertTopics.paper_not_found
         }
       }).catch(error => (error.message))
     },
@@ -295,17 +374,43 @@ export default defineComponent({
       // console.log(similars)
       let current_index = this.similarRow.index
       // console.log(index)
-      for (let element of this.similarPapers) {
-        if (element.keep === true) {
-          element['keep'] = true
-          element['similar_to'] = this.similarRow.index
-          this.rows.splice(current_index + 1, 0, element)
-          current_index += 1
-        }
+      for (let element of this.similarSelection) {
+        element['similar_to'] = this.similarRow.doi
+        this.rows.splice(current_index + 1, 0, element)
+        current_index += 1
       }
       this.generateIndex(this.rows)
       this.similarPapers = []
       this.showSimilars = false
+    },
+    removeSelection () {
+      for (const element of this.selection){
+        this.rows.splice(element.index, 1)
+        this.generateIndex(this.rows)
+        this.selection = []
+      }
+    },
+    exportTSV () {
+      let columns = this.visible_columns.slice(0,-1)
+      // write the 1st row that contains columns
+      let content = ''
+      for (const column of columns) {
+        content += column + '\t'
+      }
+      content = content.slice(0, -1) + '\r\n'
+    
+      for (const row of this.rows) {
+        for (const column of columns) {
+          content += row[column] + '\t'
+        }
+        content = content.slice(0, -1) + '\r\n'
+      }
+
+      exportFile(
+        'table-export.tsv',
+        content,
+        'text/tsv'
+      )
     }
   },
   created () {
@@ -315,9 +420,17 @@ export default defineComponent({
       // this.rows = response.data.paper_list
       for (let row of response.data.paper_list) {
         row['similar_to'] = ''
-        this.rows.push(row)
+        api.post('/papers', {
+          doi: row.doi
+        }).then((response) => {
+          if (response.data['found'] == true) {
+            row['numCitedBy'] = response.data['metadata']['numCitedBy']
+            row['journal'] = response.data['metadata']['journal']
+            this.rows.push(row)
+          }
+        }).catch(error => (error.message))
       }
-      console.log(this.rows[0])
+      // console.log(this.rows[0])
     }).catch(error => (error.message))
   }
 });

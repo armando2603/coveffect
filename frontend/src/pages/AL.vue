@@ -421,13 +421,14 @@ export default {
     filterFn (val, update) {
       // console.log(this.output_fields[2][[0]])
       update(() => {
+        const index = this.lastIndex === 'no_index' ? 0 : this.lastIndex
         if (val === '') {
-          this.filterOptions = this.stringOptions.filter(
+          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
             v => v.length < 40
           )
         } else {
           const needle = val.toLowerCase()
-          this.filterOptions = this.stringOptions.filter(
+          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
             v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
           )
         }
@@ -594,7 +595,7 @@ export default {
     }
   },
   created () {
-    this.loadGpt2 = true
+    this.loadGpt2 = false
     api.get(
       '/mutationValues'
     ).then( (response) => {

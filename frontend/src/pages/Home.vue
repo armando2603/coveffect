@@ -3,7 +3,7 @@
     <div class="q-pa-md">
       <div class="row justify-evenly">
         <div class=" text-h4 text-grey-8" style="text-align: center; max-width: 70%">
-          Search COVID-19 to find some papers about a mutation and its effects
+          Search papers over the COVID-19 literature using keywords
         </div>
       </div>
       <div class="row justify-center q-pt-md" >
@@ -76,7 +76,9 @@ export default {
           '/paperlist',
           { paper_list: this.paperList },
         ).then(response => {
-          this.$router.push({path: '/start'})
+          this.$router.push({name: 'paperList', params: {keyword: this.keywordText}})
+          // this.$router.resolve({ name: 'paperList', params: { chapters: [] } }).href
+          // this.$router.push({path: '/start'})
         }).catch(error => (error.message))
 
       }).catch(error => (error.message))
