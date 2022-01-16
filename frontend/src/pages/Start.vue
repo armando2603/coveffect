@@ -255,7 +255,7 @@ const similarVisibleColumns = [
 
 const alertTopics = {
   paper_not_found: {
-    title: 'No Abstract Found',
+    title: 'Abstract Not Found',
     body: 'The paper cannot be added'
   },
   paper_already_exist: {

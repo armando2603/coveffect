@@ -7,30 +7,54 @@
         </div>
       </div>
       <div class="row justify-center q-pt-md" >
-        <q-input style='width: 70%' outlined placeholder="Insert keywords here"  bottom-slots v-model="keywordText" stack-label>
+        <div class="" style='width: 70%'>
+        <q-input outlined placeholder="Insert keywords"  bottom-slots v-model="keywordText" stack-label>
           <template v-slot:append>
             <q-icon v-if="keywordText !== ''" name="close" @click="keywordText = ''" class="cursor-pointer" />
-            <q-icon name="search"/>
+            <!-- <q-icon name="search"/> -->
           </template>
         </q-input>
+        </div>
+
+        <div class="q-pl-md q-pt-sm">
+        <q-btn icon="search" color='primary' @click='searchByKeywords'/>
+        </div>
       </div>
-      <div class="row justify-evenly">
-        <q-btn label='search' color='primary' @click='search'/>
-      </div>
-      <!-- <div class="row justify-evenly text-h5 q-pt-xl">
+      <div class="row justify-evenly text-h5 q-pt-xl">
         <div class="text-grey-8" style="text-align: center; max-width: 70%">
-          Or search a specific paper through its DOI
+          or load a specific paper through its DOI
         </div>
       </div>
       <div class="row justify-center q-pt-md">
-        <q-input style='width: 70%' placeholder="Insert a DOI" outlined  bottom-slots v-model="DOIText" stack-label>
-          <template v-slot:append>
-            <q-icon v-if="DOIText !== ''" name="close" @click="DOIText = ''" class="cursor-pointer" />
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </div> -->
+        <div class="" style='width: 70%'>
+          <q-input placeholder="Insert a DOI in the form of 10.1101/2020.11.28.20237016" outlined  bottom-slots v-model="DOIText" stack-label>
+            <template v-slot:append>
+              <q-icon v-if="DOIText !== ''" name="close" @click="DOIText = ''" class="cursor-pointer" />
+            </template>
+          </q-input>
+        </div>
+        <div class="q-pl-md q-pt-sm">
+          <q-btn icon="search" color='primary' @click='searchByDOI'/>
+        </div>
+      </div>
     </div>
+    <q-dialog v-model="alert">
+      <q-card >
+        <q-card-section class="row justify-evenly">
+          <!-- <div class="text-h6 text-red-5">No Abstract Found</div> -->
+          <div class="text-h6 text-red-4">{{alertContent.title}}</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none row justify-evenly">
+          <!-- <div class="text-grey-7">The paper cannot be added</div> -->
+          <div class="text-grey-7">{{alertContent.body}}</div>
+        </q-card-section>
+
+        <q-card-actions align="center">
+          <q-btn flat label="OK" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -38,9 +62,19 @@
 import { ref } from 'vue';
 import { api } from 'boot/axios';
 
+const alertTopics = {
+  paper_not_found: {
+    title: 'Abstract Not Found',
+    body: 'Check the entered DOI'
+  }
+}
+
 export default {
   setup () {
     return {
+      alertTopics,
+      alert: ref(false),
+      alertContent: ref({ title: '', body: ''}),
       keywordText: ref(''),
       DOIText: ref(''),
       paperList: ref([]),
@@ -55,7 +89,7 @@ export default {
     }
   },
   methods : {
-    search () {
+    searchByKeywords () {
       api.post(
         '/search',
         { query: this.keywordText}
@@ -82,6 +116,31 @@ export default {
         }).catch(error => (error.message))
 
       }).catch(error => (error.message))
+    },
+    searchByDOI () {
+      api.post(
+        '/papers',
+        { doi: this.DOIText }
+      ).then( (response) => {
+        if (response.data['found'] == true) {
+          let row = response.data['metadata']
+          row.keep = true
+          row['similar_to'] = ''
+          row['added'] = false
+          row['index'] = 0
+          this.paperList.push(row)
+          api.post(
+            '/paperlist',
+            { paper_list: this.paperList },
+          ).then(response => {
+            this.$router.push({name: 'paperList', params: {keyword: this.DOIText}})
+          }).catch(error => (error.message))
+        }
+        else{
+          this.alert = true
+          this.alertContent = this.alertTopics.paper_not_found
+        }
+      }).catch( (error) => {error.message})
     },
     generateIndex () {
       this.paperList.forEach((row, index) => {
