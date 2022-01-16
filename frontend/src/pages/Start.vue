@@ -143,7 +143,7 @@
                 <q-btn class='' icon="close" flat round dense v-close-popup />
               </div>
             </q-card-section>
-            <q-card-section class="column" style="height: 100%">
+            <q-card-section class="column no-wrap" style="height: 100%">
               <div class="q-pb-md text-h6 row justify-evenly text-grey-7">Select relevant paper among the results</div>
               <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
                 <q-table
