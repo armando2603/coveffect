@@ -49,7 +49,6 @@
         selection='multiple'
         v-model:selected='selection'
         v-model:pagination='pagination'
-
         :visible-columns="visible_columns"
         >
           <template v-slot:top>
@@ -75,6 +74,15 @@
               <q-checkbox v-model="props.row.keep" />
             </q-td>
           </template>
+           <!-- <template v-slot:body-cell-journal="props">
+            <q-td
+            key='journal'
+            :props="props"
+            :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
+            >
+              {{props.value === "" ? 'preprint' : props.value}}
+            </q-td>
+          </template> -->
           <template v-slot:body-cell-doi="props">
             <q-td
             key='doi'
@@ -161,6 +169,7 @@
                 :visible-columns="similarVisibleColumns"
                 selection='multiple'
                 v-model:selected='similarSelection'
+                v-model:pagination='pagination'
                 >
                   <template v-slot:body-cell-keep="props">
                     <q-td key='keep' :props="props">
@@ -225,9 +234,9 @@ const columns = [
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
   // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
-  { name: 'journal', label: 'Journal', field: 'journal', sortable: true, align: 'left' },
+  { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
-   { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
+  { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
   { name: 'similar', label: '', align: 'center' }
 ]
 
@@ -250,6 +259,7 @@ const similarVisibleColumns = [
   "authors",
   "abstract",
   "journal",
+  "citations",
   // "keep",
 ]
 
@@ -306,6 +316,7 @@ export default defineComponent({
           this.rows[0].keep = true
           this.rows[0]['similar_to'] = ''
           this.rows[0]['added'] = true
+          this.rows[0]['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
           this.generateIndex(this.rows)
         }
         else{
@@ -329,15 +340,15 @@ export default defineComponent({
     // },
     saveList () {
       let saved_list = []
-      for (const element of this.rows) {
-        if (element.keep === true) {
-          saved_list.push(element)
-        }
-      }
-      this.generateIndex(saved_list)
+      // for (const element of this.rows) {
+      //   if (element.keep === true) {
+      //     saved_list.push(element)
+      //   }
+      // }
+      this.generateIndex(this.rows)
       api.post(
         '/paperlist',
-        { paper_list: saved_list },
+        { paper_list: this.rows },
       ).then( response => (this.$router.push({path: '/AL'}))
       ).catch(error => (error.message))
     },
@@ -357,17 +368,26 @@ export default defineComponent({
         { by: by, id: id}
       ).then( (response) => {
         let similars = response.data
-        let current_index = 0
+        // let current_index = 0
         this.similarPapers = []
-        for (let element of similars) {
-          element['keep'] = true
+        for (let row of similars) {
+          row['keep'] = true
           // element['similar_to'] = id
-          if (element.doi !== "") {
-            this.similarPapers.push(element)
+          if (row.doi !== "") {
+            api.post('/papers', {
+              doi: row.doi
+            }).then((response) => {
+              if (response.data['found'] == true) {
+                row['numCitedBy'] = response.data['metadata']['numCitedBy']
+                row['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
+                this.similarPapers.push(row)
+                this.generateIndex(this.similarPapers)
+              }
+            }).catch(error => (error.message))
           }
         }
         this.showSimilars = true
-        this.generateIndex(this.similarPapers)
+        // this.generateIndex(this.similarPapers)
       }).catch(error => (error.message))
     },
     addSimilarSelection () {
@@ -385,10 +405,15 @@ export default defineComponent({
     },
     removeSelection () {
       for (const element of this.selection){
-        this.rows.splice(element.index, 1)
-        this.generateIndex(this.rows)
-        this.selection = []
+        for (const [index, row] of this.rows.entries()) {
+          if (row.index === element.index) {
+            this.rows.splice(index, 1)
+            break
+          }
+        }
       }
+      this.generateIndex(this.rows)
+      this.selection = []
     },
     exportTSV () {
       let columns = this.visible_columns.slice(0,-1)
@@ -420,13 +445,15 @@ export default defineComponent({
       // this.rows = response.data.paper_list
       for (let row of response.data.paper_list) {
         row['similar_to'] = ''
+        row['journal'] = row.journal === '' ? 'preprint' : row.journal
         api.post('/papers', {
           doi: row.doi
         }).then((response) => {
           if (response.data['found'] == true) {
             row['numCitedBy'] = response.data['metadata']['numCitedBy']
-            row['journal'] = response.data['metadata']['journal']
+            // row['journal'] = response.data['metadata']['journal']
             this.rows.push(row)
+            this.generateIndex(this.rows)
           }
         }).catch(error => (error.message))
       }

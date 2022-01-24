@@ -28,6 +28,13 @@ const routes = [
       { path: '', name: 'AL', component: () => import('pages/AL.vue') }
     ]
   },
+  {
+    path: '/annotations',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', name: 'annotations', component: () => import('pages/Annotations.vue') }
+    ]
+  },
 
   // Always leave this as last one,
   // but you can also remove it
