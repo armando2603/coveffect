@@ -77,10 +77,19 @@
               <template v-slot:body-cell-doi="props">
                 <q-td
                 key='doi'
+                :class="props.row.annotated ? 'bg-green-1' : ''"
                 :props="props"
                 >
                   <!-- <q-checkbox v-model="props.row.keep" /> -->
                   <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
+                </q-td>
+              </template>
+              <template v-slot:body-cell="props">
+                <q-td
+                  :props="props"
+                  :class="props.row.annotated ? 'bg-green-1' : ''"
+                >
+                  {{props.value}}
                 </q-td>
               </template>
               </q-table>
@@ -89,19 +98,21 @@
         </q-card>
       </q-dialog>
       <div class="row justify-end">
-        <div class="col-1 column justify-evenly">
+        <div class="column justify-evenly">
             <div class="row justify-end">
               <q-btn
-                label="Saved Samples"
+                dense
+                label="annotated papers"
                 style="width:150px"
                 to="/annotations"
                 color="primary"
               />
             </div>
         </div>
-        <div class="col-1 column justify-evenly">
+        <div class="q-pl-md column justify-evenly">
             <div class="row justify-end">
               <q-btn
+                dense
                 icon='menu'
                 style="width:50px"
                 @click="showList = true"
@@ -181,20 +192,21 @@
                   <q-spinner color="primary" size="6em" />
                 </div>
                 <div v-if='!loadGpt2' class='my-outputs scroll overflow-auto' style="overflow: auto">
-                  <div class="column" v-for="(predictions_instance, instanceIndex) in editable_predictions" :key="predictions_instance">
+                  <div class="column" v-for="(predictions_instance, instance_index) in editable_predictions" :key="predictions_instance">
                     <div class="row">
-                      <div class="column justify-evenly">{{instanceIndex + ": "}}</div>
-                      <div style="width: 133px;height: auto" class='' v-for="(prediction, predictionIndex) in predictions_instance" @click="visualize(instanceIndex, predictionIndex)"  :key="prediction">
+                      <div class="column justify-evenly">{{instance_index + ": "}}</div>
+                      <div style="width: 150px;height: auto" ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance" @click="visualize(instance_index, prediction_index)"  :key="prediction">
                         <div class='q-pa-sm'>
                         <q-field
-                        class="output-field"
+                        ref="editable"
+                        :class="predictionIndex === prediction_index && instanceIndex === instance_index ? 'output-field q-field--highlighted': 'output-field'"
                         label-color="grey-10"
                         color='indigo-8'
                         stack-label
                         outlined
                         dense
                         :bg-color='getOutputColor(prediction)'
-                        :label="attributeLabels[prediction.attribute]" >
+                        :label="attributeLabels[prediction.attribute] + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
                           <template v-slot:control>
                             <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
                               {{prediction.value}}
@@ -263,7 +275,7 @@
                 </div>    
               </q-card-section>
               <q-card-section class="row q-pb-md justify-evenly">
-                <q-btn unelevate color='primary' label='save' @click="confirmSaveAndTrain = true"/>
+                <q-btn unelevate color='primary' label='save' @click="checkSaveAndTrain"/>
               </q-card-section>
             </div>
           </div>
@@ -321,10 +333,12 @@
               <q-field borderless label="Confidence:" label-color='primary' stack-label>
                 <template v-slot:control>
                   <div class="self-center full-width no-outline" tabindex="0">
-                    {{ predictionIndex === 'no_index' ? 'Select a field' : editable_predictions[instanceIndex][predictionIndex].confidence }}
+                    {{ predictionIndex === 'no_index' ? 'Select a field' : Math.round(editable_predictions[instanceIndex][predictionIndex].confidence) * 100 + '%'}}
                   </div>
+                  <!-- Math.round(prediction.confidence * 100 -->
                 </template>
               </q-field>
+              <q-checkbox v-model="fullPaperValue" left-label class="text-primary" label="Abstract doesn't contain this information" />
             </q-card-section>
             <q-card-section>
               <q-select
@@ -385,6 +399,7 @@ import { api, apiGPU } from 'boot/axios'
 
 const visible_columns = [
   // "cord_uid",
+  // "index",
   "doi",
   "title",
   "authors",
@@ -427,6 +442,8 @@ export default {
           message: message
         })
       },
+      lastPredictionIndex: ref(0),
+      fullPaperValue: ref(false),
       noGpuMode: ref(false),
       showAddInstance: ref(false),
       annotated_visible_columns,
@@ -455,8 +472,8 @@ export default {
         //   { attribute: 'Level', value: "low", confidence: 0.4 }
         // ],
       ]),
-      predictionIndex: ref('no_index'),
-      instanceIndex: ref('no_index'),
+      predictionIndex: ref(0),
+      instanceIndex: ref(0),
       greenThreshold: ref(0.8),
       redThreshold: ref(0.6),
       insertedValue: ref(''),
@@ -484,11 +501,11 @@ export default {
       ]),
       pagination: ref({
         rowsPerPage: 200,
-        sortBy: 'warns',
-        descending: false
+        sortBy: 'index',
+        descending: true
       }),
       columns: [
-        // { name: 'index', label: '#', field: 'index',required: true, align: 'left' },
+        { name: 'index', label: '#', field: 'index',required: false, align: 'left' },
         { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
         { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
         { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
@@ -529,6 +546,9 @@ export default {
       {
         input: this.paperList[index].abstract,
         output_attributes: this.output_attributes
+      },
+      {
+        timeout: 6000
       }).then( (response) => {
         this.editable_predictions =  JSON.parse(JSON.stringify(response.data.outputs))
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
@@ -539,16 +559,16 @@ export default {
         this.visualize(0)
       }).catch((error) => {
         error.message
-        this.loadGpt2 = false
+        this.activateNoGpuMode()
       })
     },
     visualize (instanceIndex, predictionIndex) {
-      // if (this.predictionIndex !== index) {
-      //   this.$nextTick(() => {
-      //     console.log(this.$refs.editables_2)
-      //     this.$refs.editables_2.click()
-      //   })
-      // }
+      if (this.predictionIndex !== predictionIndex) {
+        this.$nextTick(() => {
+          this.$refs.editable.$el.focus()
+        })
+      }
+      this.fullPaperValue = false
       this.instanceIndex = instanceIndex
       this.predictionIndex = predictionIndex
       this.insertedValue = this.editable_predictions[instanceIndex][predictionIndex].value
@@ -574,16 +594,19 @@ export default {
         this.resetPage()
       }).catch( (error) => {
         error.message
-        this.loadGpt2 = false
-        this.noGpuMode = true
         const maxStatus = this.getSampleWithMaxWarns()
         if (maxStatus.index !== null) {
           this.selected = [ this.paperList[maxStatus.index] ]
         }
         this.currentPaper = maxStatus.index
-        this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
-        this.showNotif('The prediction model is not available, users can only annotate papers')
+        this.activateNoGpuMode()
       })
+    },
+    activateNoGpuMode () {
+      this.loadGpt2 = false
+      this.noGpuMode = true
+      this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
+      this.showNotif('The prediction model is not available, users can only annotate papers')
     },
     count_warns (row) {
       if (!Object.keys(row).includes('extracted_values')) return row.index
@@ -650,10 +673,16 @@ export default {
       // this.$refs.input.showPopup()
     },
     editValue () {
+      if (this.insertedValue === '' || this.insertedValue === 'Insert Value') {
+        this.showNotif('Insert a Value')
+        return
+      }
       this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue
       this.editable_predictions[this.instanceIndex][this.predictionIndex].confidence = 1
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fixed = true
-      console.log(this.selected)
+      this.editable_predictions[this.instanceIndex][this.predictionIndex].fullPaperValue = this.fullPaperValue
+
+      // console.log(this.selected)
       this.feedback_list.push(
         {
           value: this.insertedValue,
@@ -712,8 +741,13 @@ export default {
         }
         // console.log(extracted_values)
         this.paperList[this.currentPaper].extracted_values = extracted_values
+        this.paperList[this.currentPaper].annotated = true
         this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
-        const correctedRow = this.paperList[this.currentPaper]
+        api.post(
+          '/paperlist',
+          { paper_list: this.paperList }
+        ).catch( (error) => error.message)
+        const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
         correctedRow.index = this.fixedPapers.length
         // console.log(correctedRow)
         this.fixedPapers.push(correctedRow)
@@ -808,12 +842,23 @@ export default {
     addInstance () {
       this.editable_predictions.push(
         [
-          { attribute: 'Mutation Type', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'Name', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'Effect', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'Level', value: "Insert Value", confidence: 1, fixed: false }
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false },
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false }
         ]
       )
+    },
+    checkSaveAndTrain () {
+      for (const prediction_instance of this.editable_predictions) {
+        for (const prediction of prediction_instance) {
+          if (prediction.value === '' || prediction.value === 'Insert Value') {
+            this.showNotif('One or more values are missing')
+            return
+          }
+        }
+      }
+      this.confirmSaveAndTrain = true
     }
   },
   created () {
