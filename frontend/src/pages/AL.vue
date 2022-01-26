@@ -682,9 +682,10 @@ export default {
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fixed = true
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fullPaperValue = this.fullPaperValue
 
-      // console.log(this.selected)
+      // console.log(Date())
       this.feedback_list.push(
         {
+          timestamp: Date(),
           value: this.insertedValue,
           attribute: this.editable_predictions[this.instanceIndex][this.predictionIndex].attribute,
           doi: this.selected[0].doi,
