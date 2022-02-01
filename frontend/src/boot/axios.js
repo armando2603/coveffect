@@ -5,6 +5,7 @@ const api = axios.create({ baseURL: 'http://geco.deib.polimi.it/muteffstage_api/
 const apiGPU = axios.create({ baseURL: 'http://muteffstagegpu.ddns.net:61114' })
 // to work in local use instead this ip
 // const api = axios.create({ baseURL: 'http://localhost:61113/' })
+// const apiGPU = axios.create({ baseURL: 'http://094c-35-236-137-214.ngrok.io' })
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

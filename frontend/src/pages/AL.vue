@@ -147,6 +147,11 @@
             </q-card-section>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
+                <q-field stack-label borderless label-color="primary" label='Annotated:'>
+                  <template v-slot:control>
+                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotated + "/" + paperList.length}}</div>
+                  </template>
+                </q-field>
                 <q-field stack-label borderless label-color="primary" label='DOI:'>
                   <template v-slot:control>
                     <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0"><a :href="'https://dx.doi.org/' + paperList[currentPaper].doi" target="_blank">{{paperList[currentPaper].doi}}</a></div>
@@ -333,7 +338,7 @@
               <q-field borderless label="Confidence:" label-color='primary' stack-label>
                 <template v-slot:control>
                   <div class="self-center full-width no-outline" tabindex="0">
-                    {{ predictionIndex === 'no_index' ? 'Select a field' : Math.round(editable_predictions[instanceIndex][predictionIndex].confidence) * 100 + '%'}}
+                    {{ predictionIndex === 'no_index' ? 'Select a field' : Math.round(editable_predictions[instanceIndex][predictionIndex].confidence * 100) + '%'}}
                   </div>
                   <!-- Math.round(prediction.confidence * 100 -->
                 </template>
@@ -472,8 +477,8 @@ export default {
         //   { attribute: 'Level', value: "low", confidence: 0.4 }
         // ],
       ]),
-      predictionIndex: ref(0),
-      instanceIndex: ref(0),
+      predictionIndex: ref('no_index'),
+      instanceIndex: ref('no_index'),
       greenThreshold: ref(0.8),
       redThreshold: ref(0.6),
       insertedValue: ref(''),
@@ -539,6 +544,17 @@ export default {
       loadGpt2: ref(false)
     }
   },
+  computed: {
+    numAnnotated () {
+      let num = 0
+      for (const row of this.paperList) {
+        if (row.annotated === true) {
+          num += 1
+        }
+      }
+      return num
+    }
+  },
   methods : {
     extraction (index) {
       this.loadGpt2 = true
@@ -550,14 +566,20 @@ export default {
       {
         timeout: 6000
       }).then( (response) => {
-        this.editable_predictions =  JSON.parse(JSON.stringify(response.data.outputs))
+        this.editable_predictions =  [JSON.parse(JSON.stringify(response.data.outputs))]
+        for (const [instance_index, instance] of this.editable_predictions.entries()){
+          for (const prediction_index in instance) {
+            this.editable_predictions[instance_index][prediction_index].fullPaperValue = false
+          }
+        }
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
-        this.saliency_maps = response.data.saliency_map
+        this.saliency_maps = [response.data.saliency_map]
         this.loadGpt2 = false
-        this.visualize(0)
+        this.visualize(0, 0)
       }).catch((error) => {
+        console.log('error extraction')
         error.message
         this.activateNoGpuMode()
       })
@@ -568,7 +590,7 @@ export default {
           this.$refs.editable.$el.focus()
         })
       }
-      this.fullPaperValue = false
+      this.fullPaperValue = this.editable_predictions[instanceIndex][predictionIndex].fullPaperValue
       this.instanceIndex = instanceIndex
       this.predictionIndex = predictionIndex
       this.insertedValue = this.editable_predictions[instanceIndex][predictionIndex].value
@@ -584,15 +606,20 @@ export default {
       apiGPU.post(
         '/generateTable',
         { output_attributes: this.output_attributes, inputs: abstract_list },
-        { timeout: 6000 }
+        { timeout: 9000 }
       ).then( (response) => {
         const extracted_values_list = response.data
         for ( const [index, extracted_values] of extracted_values_list.entries()) {
-          this.paperList[index]['extracted_values'] = extracted_values
+          if (this.paperList[index].annotated === false){
+            this.paperList[index]['extracted_values'] = [extracted_values]
+          }
+
           this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
         }
         this.resetPage()
       }).catch( (error) => {
+        console.log('error in generatetable')
+        console.log(error.message)
         error.message
         const maxStatus = this.getSampleWithMaxWarns()
         if (maxStatus.index !== null) {
@@ -705,7 +732,9 @@ export default {
     resetPage () {
       // this.selected = [this.paperList[0]]
       this.insertedValue = ''
-      this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
+      // console.log(this.selected)
+      // this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
+      // console.log('anche qua ci arrivo')
       this.editable_predictions = []
       this.feedback_list = []
       const maxStatus = this.getSampleWithMaxWarns()
@@ -713,6 +742,7 @@ export default {
         this.selected = [ this.paperList[maxStatus.index] ]
       }
       this.currentPaper = maxStatus.index
+      this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
     },
     getSampleWithMaxWarns () {
@@ -843,10 +873,10 @@ export default {
     addInstance () {
       this.editable_predictions.push(
         [
-          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false }
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
         ]
       )
     },

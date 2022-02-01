@@ -17,7 +17,7 @@
         </div>
 
         <div class="q-pl-md q-pt-sm">
-        <q-btn icon="search" color='primary' @click='searchByKeywords'/>
+        <q-btn icon="search" color='primary' :loading="loadKey" @click='searchByKeywords();loadKey=true'/>
         </div>
       </div>
       <div class="row justify-evenly text-h5 q-pt-xl">
@@ -34,7 +34,7 @@
           </q-input>
         </div>
         <div class="q-pl-md q-pt-sm">
-          <q-btn icon="search" color='primary' @click='searchByDOI'/>
+          <q-btn icon="search" color='primary' :loading="loadDoi" @click='searchByDOI(); loadDoi=true'/>
         </div>
       </div>
     </div>
@@ -72,6 +72,8 @@ const alertTopics = {
 export default {
   setup () {
     return {
+      loadKey: ref(false),
+      loadDoi: ref(false),
       alertTopics,
       alert: ref(false),
       alertContent: ref({ title: '', body: ''}),

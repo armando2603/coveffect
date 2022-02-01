@@ -31,7 +31,14 @@
           <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
         </div>
       </div> -->
-      <div class="q-pa-md column" style="flex-grow: 1">
+      <div class="q-pl-sm q-pr-sm q-mr-sm q-mt-sm row justify-between">
+        <div class="q-pl-sm">
+          <q-btn class='' rounded icon='arrow_back' color='primary' to="/" />
+        </div>
+        <div class="text-primary q-pt-sm text-h6 column justify-evenly">Select relevant papers among the results to continue</div>
+        <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
+      </div>
+      <div class="q-pl-md q-pr-md q-pb-sm q-pt-sm column" style="flex-grow: 1">
         <q-table
         class="my-sticky-virtscroll-table"
         style="overflow: auto; flex-grow: 1"
@@ -55,10 +62,10 @@
             <div class="row justify-between" style="width: 100%">
               <div class="text-h5 text-primary q-pl-md q-pr-md">{{'Results for : "' + $route.params.keyword + '"'}}</div>
               <div class="col-4 row justify-end">
-                <q-btn class='' rounded icon='add' color='green-8' @click='showAddPaper=true'/>
-                <div class='q-pl-sm'>
+                <q-btn class='' rounded icon='add' color='primary' @click='showAddPaper=true'/>
+                <!-- <div class='q-pl-sm'>
                   <q-btn rounded v-if='rows.length > 0' icon='remove' color='red-8' @click='removeSelection'/>
-                </div>
+                </div> -->
                 <div class="q-pl-sm">
                   <q-btn class='' label="Export TSV" rounded no-caps color='primary' @click='exportTSV'/>
                 </div>
@@ -109,7 +116,7 @@
             :props="props"
             :class="props.row.added ? 'bg-green-1' : ((props.row.similar_to !== '')?'bg-cyan-1':'bg-white')"
             >
-              <q-btn :disable="props.row.keep===false" unelevated dense size="sm" color="primary" label='find similars' @click="findSimilar(props.row)" />
+              <q-btn :disable="props.row.keep===false" unelevated dense size="sm" color="primary" label='find similar papers' @click="findSimilar(props.row)" />
             </q-td>
           </template>
           <template v-slot:body-cell="props">
@@ -140,19 +147,16 @@
             </q-card-actions>
           </q-card>
         </q-dialog>
-        <div class="q-pa-sm row justify-evenly">
-        <q-btn class='' rounded icon='arrow_forward' color='positive' @click='saveList'/>
-        </div>
         <q-dialog v-model='showSimilars'>
           <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
-            <q-card-section class="row justify-between">
-              <div class="text-h5 text-primary">Similar Papers</div>
+            <q-card-section class="row justify-between q-pb-sm">
+              <div class="text-h5 text-primary text-bold q-pl-md">Similar paper to {{similarRow.doi}}</div>
               <div class="col-1 justify-end row">
                 <q-btn class='' icon="close" flat round dense v-close-popup />
               </div>
             </q-card-section>
             <q-card-section class="column no-wrap" style="height: 100%">
-              <div class="q-pb-md text-h6 row justify-evenly text-grey-7">Select relevant paper among the results</div>
+              <div class="q-pb-md text-h6 text-primary row justify-evenly">Select relevant paper among the results</div>
               <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
                 <q-table
                 style="flex-grow: 1;overflow: auto"
@@ -189,7 +193,7 @@
               </div>
             </q-card-section>
             <div class="q-pb-md row justify-evenly">
-              <q-btn unelevate color="primary" label="add" @click="addSimilarSelection"/>
+              <q-btn unelevate color="primary" label="add selection" @click="addSimilarSelection"/>
             </div>
           </q-card>
         </q-dialog>
@@ -223,20 +227,20 @@
 import { defineComponent } from "vue";
 import { api } from 'boot/axios';
 import { ref } from 'vue';
-import { exportFile } from 'quasar'
+import { exportFile, useQuasar } from 'quasar'
 
 const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left'},
   { name: 'cord_uid', label: 'Cord UID', field: 'cord_uid', align: 'center' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
-  { name: 'similarto', label: 'Similar To', field: 'similar_to', align: 'center' },
+  { name: 'similar_to', label: 'Similar To', field: 'similar_to', align: 'center' },
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
   // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
   { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
-  { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
+  { name: 'numCitedBy', label: 'Citations', field: 'numCitedBy', align: 'center' },
   { name: 'similar', label: '', align: 'center' }
 ]
 
@@ -244,12 +248,12 @@ const visible_columns = [
   // "cord_uid",
   "index",
   "doi",
-  "similarto",
+  "similar_to",
   "title",
   "authors",
   "abstract",
   "journal",
-  "citations",
+  "numCitedBy",
   "similar"
 ]
 
@@ -259,7 +263,7 @@ const similarVisibleColumns = [
   "authors",
   "abstract",
   "journal",
-  "citations",
+  "numCitedBy",
   // "keep",
 ]
 
@@ -277,7 +281,17 @@ const alertTopics = {
 export default defineComponent({
   name: "paperList",
   setup () {
+    const $q = useQuasar()
     return {
+      showNotif (message) {
+        $q.notify({
+          color: 'red-5',
+          textColor: 'white',
+          icon: 'warning',
+          position: 'top',
+          message: message
+        })
+      },
       searchKeyword: ref(''),
       doi : ref(''),
       alert : ref(false),
@@ -339,20 +353,25 @@ export default defineComponent({
     //   }
     // },
     saveList () {
-      let saved_list = []
+      if (this.selection.length === 0) {
+        this.showNotif('Select at least one paper')
+        return
+      }
       // for (const element of this.rows) {
       //   if (element.keep === true) {
       //     saved_list.push(element)
       //   }
       // }
-      this.generateIndex(this.rows)
+      this.generateIndex(this.selection)
       api.post(
         '/paperlist',
-        { paper_list: this.rows },
+        { paper_list: this.selection },
       ).then( response => (this.$router.push({path: '/AL'}))
       ).catch(error => (error.message))
     },
     findSimilar (row) {
+      this.similarSelection = []
+      this.similarPapers = []
       this.similarRow = row
       let by = ""
       let id = ""
@@ -370,17 +389,22 @@ export default defineComponent({
         let similars = response.data
         // let current_index = 0
         this.similarPapers = []
-        for (let row of similars) {
-          row['keep'] = true
+        for (let similar of similars) {
+          similar['keep'] = true
           // element['similar_to'] = id
-          if (row.doi !== "") {
+          let AlreadyExist = false
+          for (const row of this.rows)
+            if (row.doi === similar.doi || similar.doi === ""){
+              AlreadyExist = true
+            }
+          if (!AlreadyExist) {
             api.post('/papers', {
-              doi: row.doi
+              doi: similar.doi
             }).then((response) => {
               if (response.data['found'] == true) {
-                row['numCitedBy'] = response.data['metadata']['numCitedBy']
-                row['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
-                this.similarPapers.push(row)
+                similar['numCitedBy'] = response.data['metadata']['numCitedBy']
+                similar['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
+                this.similarPapers.push(similar)
                 this.generateIndex(this.similarPapers)
               }
             }).catch(error => (error.message))
@@ -403,18 +427,18 @@ export default defineComponent({
       this.similarPapers = []
       this.showSimilars = false
     },
-    removeSelection () {
-      for (const element of this.selection){
-        for (const [index, row] of this.rows.entries()) {
-          if (row.index === element.index) {
-            this.rows.splice(index, 1)
-            break
-          }
-        }
-      }
-      this.generateIndex(this.rows)
-      this.selection = []
-    },
+    // removeSelection () {
+    //   for (const element of this.selection){
+    //     for (const [index, row] of this.rows.entries()) {
+    //       if (row.index === element.index) {
+    //         this.rows.splice(index, 1)
+    //         break
+    //       }
+    //     }
+    //   }
+    //   this.generateIndex(this.rows)
+    //   this.selection = []
+    // },
     exportTSV () {
       let columns = this.visible_columns.slice(0,-1)
       // write the 1st row that contains columns
