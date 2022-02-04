@@ -17,12 +17,15 @@
           v-model:pagination='pagination'
           >
           <template v-slot:top>
-            <div class="row justify-start" style="width: 100%">
-              <q-btn icon="arrow_back" rounded color="red-4" to="/AL" />
+            <div class="row justify-start col-10" >
+              <q-btn icon="arrow_back" rounded color="red-4" @click="this.$router.push({name: 'AL', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})" />
               <div class="text-h5 text-primary q-pl-md q-pr-md">
                 Annotated Papers List
               </div>
             </div>
+            <div class="row justify-end col-2">
+              <q-btn rounded no-caps color='primary' label="Export TSV" @click='exportTSV' />
+            </div>  
           </template>
           <template v-slot:body-cell-doi="props">
             <q-td
@@ -38,14 +41,14 @@
             key='extractions'
             :props="props"
             >
-              <q-btn unelevated dense size="sm" color="primary" label='Extracted Values' @click="showExtractedValues = true; currentPaper = props.row.index"/>
+              <q-btn unelevated dense size="sm" color="primary" label='Extracted Annotations' @click="showExtractedValues = true; currentPaper = props.row.index"/>
             </q-td>
           </template>
         </q-table>
         <q-dialog v-model="showExtractedValues">
           <q-card style="width: 40%;height: 100%">
             <q-card-section class="row justify-evenly">
-              <div class="col-11 text-h5 text-bold text-primary row justify-evenly">Extracted Values</div>
+              <div class="col-11 text-h5 text-bold text-primary row justify-evenly">Extracted Annotations</div>
               <div class="col-1 justify-end row">
                 <q-btn class='' color="primary" icon="close" flat round dense v-close-popup />
               </div>
@@ -54,7 +57,7 @@
               <div class="q-pt-md" v-for="(predictions_instance, instance_index) in fixedPapers[currentPaper].extracted_values" :key="predictions_instance">
                 <q-card class="">
                 <div class="q-pl-md">
-                <div class="text-primary text-h6">{{'Instance: ' + instance_index}}</div>
+                <div class="text-primary text-h6">{{instance_index + 1}}</div>
                 <div class='row no-wrap' v-for="attribute in output_attributes"  :key="attribute">
                   <!-- {{predictions_instance[attribute]}} -->
                   <q-field style="width: 300px" stack-label borderless label-color="primary" :label='attribute'>
@@ -101,11 +104,23 @@
 <script>
 import { ref } from 'vue'
 import { api } from 'boot/axios'
+import { exportFile } from 'quasar'
+
+const visible_columns = [
+  'doi',
+  'title',
+  'authors',
+  'abstract',
+  'journal',
+  'numCitedBy',
+  'extractions'
+]
 
 export default {
   // name: 'PageName',
   setup () {
     return {
+      visible_columns,
       showExtractedValues: ref(false),
       fixedPapers: ref([]),
       currentPaper: ref(0),
@@ -123,9 +138,9 @@ export default {
         { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
         // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
-        { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
+        { name: 'numCitedBy', label: 'Citations', field: 'numCitedBy', align: 'center' },
         // { name: 'warns', label: 'Warns', field: 'warns', sortable: true, align: 'center' },
-        { name: 'extractions', label: 'Extracted Values', sortable: false, align: 'center' }
+        { name: 'extractions', label: 'Extracted Annotations', sortable: false, align: 'center' }
       ],
       pagination: ref({
         rowsPerPage: 200,
@@ -134,15 +149,59 @@ export default {
       }),
     }
   },
-  methods : {},
+  methods : {
+    exportTSV () {
+      let columns = this.visible_columns.slice(0,-1)
+      // write the 1st row that contains columns
+      let content = ''
+      for (const column of columns) {
+        content += column + '\t'
+      }
+      let maxNumInstances = 0
+      for (const row of this.fixedPapers) {
+        if (row.extracted_values.length > maxNumInstances) maxNumInstances = row.extracted_values.length
+      }
+      for (const index of Array(maxNumInstances).keys()) {
+        for (const attribute of this.output_attributes) {
+          content += index + ': ' + attribute + '\t'
+        }
+      }
+      content = content.slice(0, -1) + '\r\n'
+
+      for (const row of this.fixedPapers) {
+        for (const column of columns) {
+          content += row[column] + '\t'
+        }
+        for (const index of Array(maxNumInstances).keys()) {
+          if (index < row.extracted_values.length) {
+            for (const attribute of this.output_attributes){
+              content += row.extracted_values[index][attribute].value + '\t'
+            }
+          } else {
+            for (const attribute of this.output_attributes){
+              content += '' + '\t'
+            }
+          }
+        }
+        content = content.slice(0, -1) + '\r\n'
+      }
+
+      exportFile(
+        'table-export.tsv',
+        content,
+        'text/tsv'
+      )
+    }
+  },
   created () {
     this.currentPaper = 0
-    api.get(
-      '/fixedPapers'
-    ).then( (response) => {
-      this.fixedPapers = response.data
-      // console.log(this.fixedPapers[this.currentPaper])
-    }).catch( (error) => error.message)
+    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+    // api.get(
+    //   '/fixedPapers'
+    // ).then( (response) => {
+    //   this.fixedPapers = response.data
+    //   // console.log(this.fixedPapers[this.currentPaper])
+    // }).catch( (error) => error.message)
   }
 }
 </script>

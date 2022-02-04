@@ -98,18 +98,64 @@
         </q-card>
       </q-dialog>
       <div class="row justify-end">
-        <div class="column justify-evenly">
+        <div class="q-px-sm column justify-evenly">
+            <div class="row justify-end">
+              <q-file
+                v-model="session"
+                v-show="false"
+                ref="filePicker"
+                accept=".json"
+                @update:model-value="loadSession"
+              />
+            </div>
+        </div>
+      </div>
+      <div class="row justify-end">
+        <div class="q-px-sm column justify-evenly">
             <div class="row justify-end">
               <q-btn
                 dense
-                label="annotated papers"
-                style="width:150px"
-                to="/annotations"
+                label="Annotated Papers"
+                no-caps
+                @click="this.$router.push({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})"
                 color="primary"
               />
             </div>
         </div>
-        <div class="q-pl-md column justify-evenly">
+        <div class="q-px-sm column justify-evenly">
+            <div class="row justify-end">
+              <q-btn
+                dense
+                label="New Session"
+                no-caps
+                color="primary"
+                to="/"
+              />
+            </div>
+        </div>
+        <div class="q-px-sm column justify-evenly">
+            <div class="row justify-end">
+              <q-btn
+                dense
+                label="Save Session"
+                no-caps
+                color="primary"
+                @click="saveSession"
+              />
+            </div>
+        </div>
+        <div class="q-px-sm column justify-evenly">
+            <div class="row justify-end">
+              <q-btn
+                dense
+                label="Load Session"
+                no-caps
+                color="primary"
+                @click="this.$refs.filePicker.$el.click()"
+              />
+            </div>
+        </div>
+        <div class="q-pl-sm column justify-evenly">
             <div class="row justify-end">
               <q-btn
                 dense
@@ -147,7 +193,7 @@
             </q-card-section>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
-                <q-field stack-label borderless label-color="primary" label='Annotated:'>
+                <q-field stack-label borderless label-color="primary" label='Papers Annotated:'>
                   <template v-slot:control>
                     <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotated + "/" + paperList.length}}</div>
                   </template>
@@ -190,7 +236,7 @@
           <div class="column col-12 no-wrap">
             <div class="column justify-between no-wrap" style="overflow: auto;flex-grow: 1">
               <q-card-section class="row justify-evenly">
-                <div class="text-h5">Extracted Values</div>
+                <div class="text-h5">Extracted Annotations</div>
               </q-card-section>
               <q-card-section style="overflow: auto; flex-grow: 1;">
                 <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
@@ -199,9 +245,47 @@
                 <div v-if='!loadGpt2' class='my-outputs scroll overflow-auto' style="overflow: auto">
                   <div class="column" v-for="(predictions_instance, instance_index) in editable_predictions" :key="predictions_instance">
                     <div class="row">
-                      <div class="column justify-evenly">{{instance_index + ": "}}</div>
-                      <div style="width: 150px;height: auto" ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance" @click="visualize(instance_index, prediction_index)"  :key="prediction">
-                        <div class='q-pa-sm'>
+                      <div class="column justify-evenly">{{instance_index + 1 + ": "}}</div>
+                      <div ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance"  :key="prediction">
+                        <div class="row no-wrap" v-if="prediction.attribute === 'mutation_name'">
+                          <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = true; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_')[0] === '' ? 'Insert Value': prediction.value.split('_')[0] ">  
+                            <q-field
+                            ref="editable"
+                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
+                            label-color="grey-10"
+                            color='indigo-8'
+                            stack-label
+                            outlined
+                            dense
+                            :bg-color='prediction.fixed && prediction.value.split("_")[0] === "" ? "grey-3" : getOutputColor(prediction)'
+                            :label="'Protein' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
+                              <template v-slot:control>
+                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
+                                  {{prediction.value.split('_')[0] === "" ? 'Insert Value' : prediction.value.split('_')[0]}}
+                                </div>
+                              </template>
+                            </q-field>
+                          </div>
+                          <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = false; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_').slice(1).join('') === '' ? 'Insert Value': prediction.value.split('_').slice(1).join('') ">
+                            <q-field
+                            ref="editable"
+                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && !isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
+                            label-color="grey-10"
+                            color='indigo-8'
+                            stack-label
+                            outlined
+                            dense
+                            :bg-color='prediction.fixed && prediction.value.split("_").slice(1).join("_") === "" ? "grey-3" : getOutputColor(prediction)'
+                            :label="'Mutation' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
+                              <template v-slot:control>
+                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
+                                  {{prediction.value.split('_').slice(1).join('_') !== "" ? prediction.value.split('_').slice(1).join('_') : 'Insert Value'}}
+                                </div>
+                              </template>
+                            </q-field>
+                          </div>
+                        </div>
+                        <div class='q-pa-sm' @click="isProteinAttribute = false; visualize(instance_index, prediction_index)" style="width: 120px;height: auto" v-if="prediction.attribute !== 'mutation_name'">
                         <q-field
                         ref="editable"
                         :class="predictionIndex === prediction_index && instanceIndex === instance_index ? 'output-field q-field--highlighted': 'output-field'"
@@ -331,7 +415,7 @@
               <q-field borderless label="Selected Attribute:" label-color='primary' stack-label>
                 <template v-slot:control>
                   <div class="self-center full-width no-outline" tabindex="0">
-                    {{ predictionIndex === 'no_index' ? 'Select a field' : editable_predictions[instanceIndex][predictionIndex].attribute }}
+                    {{ predictionIndex === 'no_index' ? 'Select a field' : (isProteinAttribute ? 'Protein' : attributeLabels[editable_predictions[instanceIndex][predictionIndex].attribute]) }}
                   </div>
                 </template>
               </q-field>
@@ -399,7 +483,7 @@
 
 <script>
 import { ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { useQuasar, exportFile } from 'quasar'
 import { api, apiGPU } from 'boot/axios'
 
 const visible_columns = [
@@ -438,15 +522,17 @@ export default {
     //       })
     const $q = useQuasar()
     return {
-      showNotif (message) {
+      showNotif (message, color='red-5', icon='warning', position='top') {
         $q.notify({
-          color: 'red-5',
+          color: color,
           textColor: 'white',
-          icon: 'warning',
-          position: 'top',
+          icon: icon,
+          position: position,
           message: message
         })
       },
+      session : ref(null),
+      isProteinAttribute: ref(false),
       lastPredictionIndex: ref(0),
       fullPaperValue: ref(false),
       noGpuMode: ref(false),
@@ -459,16 +545,18 @@ export default {
       showList: ref(false),
       attributeLabels: ref({
         mutation_type: 'Mutation Type',
-        mutation_name: 'Mutation Name',
+        protein: 'Protein',
+        mutation_name: 'Mutation',
         effect: 'Effect',
         level: 'Level'
       }),
       editable_predictions: ref([
         [
-          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false },
-          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false }
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
         ],
         // [
         //   { attribute: 'Mutation Type', value: "single", confidence: 1 },
@@ -485,6 +573,15 @@ export default {
       filterOptions: ref([]),
       stringOptions: ref({
         mutation_type: ['single', 'group', 'variant'],
+        protein: [
+          'E', 'M', 'N', 'NS3',
+          'NS6', 'NS7A', 'NS7B', 'NS8', 'NSP1',
+          'NSP10', 'NSP11', 'NSP12', 'NSP13', 'NSP14',
+          'NSP15', 'NSP16', 'NSP2', 'NSP3',
+          'NSP4', 'NSP5', 'NSP6', 'NSP7',
+          'NSP8', 'NSP9', 'ORF10', 'ORF1AB',
+          'ORF1A', 'ORF1B', 'SPIKE'
+        ],
         mutation_name: [],
         effect: ['risk_of_reinfection', 'viral_load',
        'effectiveness_of_available_antiviral_drugs', 'binding_to_Abs',
@@ -498,6 +595,14 @@ export default {
       highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
       feedback_list: ref([]),
       saliency_maps: ref([]),
+      // prediction_output_attributes: ref(
+      //   [
+      //     'mutation_type',
+      //     'mutation_name',
+      //     'effect',
+      //     'level'
+      //   ]
+      // ),
       output_attributes: ref([
         'mutation_type',
         'mutation_name',
@@ -518,7 +623,7 @@ export default {
         // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
         { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
-        { name: 'warns', label: 'Warns', field: 'warns', sortable: true, align: 'center' },
+        { name: 'warns', label: 'Warnings', field: 'warns', sortable: true, align: 'center' },
         { name: 'extractions', label: 'Extracted Values', sortable: false, align: 'center' }
       ],
       // fixedColumns: [
@@ -661,14 +766,31 @@ export default {
       update(() => {
         const index = this.predictionIndex === 'no_index' ? 0 : this.predictionIndex
         if (val === '') {
-          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
-            v => v.length < 40
-          )
+          if (this.output_attributes[this.prediction_index] !== 'mutation_name' && this.isProteinAttribute) {
+            this.filterOptions = this.stringOptions['protein'].filter(
+              v => v.length < 40
+            )
+          }
+          else{
+            this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+              v => v.length < 40
+            )
+          }
+          
         } else {
-          const needle = val.toLowerCase()
-          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
-            v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
-          )
+          if (this.output_attributes[this.prediction_index] !== 'mutation_name' && this.isProteinAttribute) {
+            const needle = val.toLowerCase()
+            this.filterOptions = this.stringOptions['protein'].filter(
+              v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
+            )
+          }
+          else{
+            const needle = val.toLowerCase()
+            this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+              v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
+            )
+          }
+          
         }
       })
     },
@@ -704,7 +826,24 @@ export default {
         this.showNotif('Insert a Value')
         return
       }
-      this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue
+      if (this.output_attributes[this.predictionIndex] !== 'mutation_name'){
+        this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue
+      }
+      else {
+        console.log('sto modificando uno dei due')
+        if (!this.editable_predictions[this.instanceIndex][this.predictionIndex].value.includes('_')) {
+          if (this.isProteinAttribute) this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue + '_'
+          else this.editable_predictions[this.instanceIndex][this.predictionIndex].value = '_' + this.insertedValue
+        }
+        else {
+          if (this.isProteinAttribute) {
+            this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue + '_' + this.editable_predictions[this.instanceIndex][this.predictionIndex].value.split('_').slice(1).join('')
+          } else {
+            this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.editable_predictions[this.instanceIndex][this.predictionIndex].value.split('_')[0] + '_' + this.insertedValue
+          }
+        }
+      }
+      console.log(this.editable_predictions[this.instanceIndex][this.predictionIndex].value)
       this.editable_predictions[this.instanceIndex][this.predictionIndex].confidence = 1
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fixed = true
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fullPaperValue = this.fullPaperValue
@@ -785,6 +924,7 @@ export default {
         // console.log(this.fixedPapers)
         this.storeFixedPapers()
         this.confirmSaveAndTrain = false
+        this.showNotif('Your annotations have been saved', 'green-5', '')
         return
       }
       this.loadingRetraining = true
@@ -874,6 +1014,7 @@ export default {
       this.editable_predictions.push(
         [
           { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
           { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
           { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
           { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
@@ -890,24 +1031,89 @@ export default {
         }
       }
       this.confirmSaveAndTrain = true
-    }
+    },
+    saveSession () {
+      const session = {
+        annotatedPapers: this.fixedPapers,
+        paperList: this.paperList
+      }
+      exportFile(
+        'session.json',
+        JSON.stringify(session),
+        'text/json'
+      )
+    },
+    loadSession(session) {
+      var reader = new FileReader()
+      reader.onload = (e) => {
+        // console.log(reader.result)
+        // console.log(e)
+        const sessionJSON = JSON.parse(reader.result)
+        // console.log(sessionJSON)
+        for (const newRow of sessionJSON.annotatedPapers) {
+          let notExist = true
+          for (const oldRow of this.fixedPapers) {
+            if (newRow.doi === oldRow.doi) {
+              notExist = false
+              break
+            }
+          }
+          if (notExist) {
+            this.fixedPapers.push(newRow)
+          }
+        }
+
+        for (const newRow of sessionJSON.paperList) {
+          let notExist = true
+          for (const oldRow of this.paperList) {
+            if (newRow.doi === oldRow.doi) {
+              notExist = false
+              break
+            }
+          }
+          if (notExist) {
+            this.paperList.push(newRow)
+          }
+        }
+        this.generateIndex(this.fixedPapers)
+        this.generateIndex(this.paperList)
+        api.post(
+          '/paperlist',
+          { paper_list: this.paperList }
+        ).catch( (error) => error.message)
+        // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
+        // this.paperList = this.paperList.concat(sessionJSON.PaperList)
+
+        this.generateTable()
+        // reader.result
+        // this.fileGEO = null
+      }
+      reader.readAsText(session)
+      
+    },
+    generateIndex (no_indexed_list) {
+      no_indexed_list.forEach((row, index) => {
+        row.index = index
+      }) 
+    },
   },
   created () {
     this.loadGpt2 = true
-    api.get(
-      '/mutationValues'
-    ).then( (response) => {
-      this.stringOptions.mutation_name = response.data
-      // console.log(response.data)
-    }).catch( (error) => {error.message})
+    // api.get(
+    //   '/mutationValues'
+    // ).then( (response) => {
+    //   this.stringOptions.mutation_name = response.data
+    //   // console.log(response.data)
+    // }).catch( (error) => {error.message})
+    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     api.get(
       '/paperlist'
     ).then((response) => {
-      api.get(
-        '/fixedPapers'
-      ).then( (response) => {
-        this.fixedPapers = response.data
-      })
+      // api.get(
+      //   '/fixedPapers'
+      // ).then( (response) => {
+      //   this.fixedPapers = response.data
+      // })
       this.paperList = response.data.paper_list
       this.generateTable()
     }).catch((error) => (error.message))
