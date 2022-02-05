@@ -18,7 +18,7 @@
           >
           <template v-slot:top>
             <div class="row justify-start col-10" >
-              <q-btn icon="arrow_back" rounded color="red-4" @click="this.$router.push({name: 'AL', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})" />
+              <q-btn icon="arrow_back" rounded color="red-4" @click="this.$router.replace({name: 'AL', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})" />
               <div class="text-h5 text-primary q-pl-md q-pr-md">
                 Annotated Papers List
               </div>

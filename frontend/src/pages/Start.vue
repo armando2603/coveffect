@@ -366,7 +366,7 @@ export default defineComponent({
       api.post(
         '/paperlist',
         { paper_list: this.selection },
-      ).then( response => (this.$router.push({name: 'AL', params: {fixedPapers: JSON.stringify([])}}))
+      ).then( response => (this.$router.replace({name: 'AL', params: {fixedPapers: JSON.stringify([])}}))
       ).catch(error => (error.message))
     },
     findSimilar (row) {

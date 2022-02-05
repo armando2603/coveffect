@@ -117,7 +117,7 @@
                 dense
                 label="Annotated Papers"
                 no-caps
-                @click="this.$router.push({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})"
+                @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})"
                 color="primary"
               />
             </div>
@@ -193,9 +193,9 @@
             </q-card-section>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
-                <q-field stack-label borderless label-color="primary" label='Papers Annotated:'>
+                <q-field stack-label borderless label-color="primary" label='Paper:'>
                   <template v-slot:control>
-                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotated + "/" + paperList.length}}</div>
+                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{currentPaper + 1 + "/" + paperList.length}}</div>
                   </template>
                 </q-field>
                 <q-field stack-label borderless label-color="primary" label='DOI:'>
@@ -430,7 +430,7 @@
               <q-checkbox v-model="fullPaperValue" left-label class="text-primary" label="Abstract doesn't contain this information" />
             </q-card-section>
             <q-card-section>
-              <q-select
+              <!-- <q-select
                 outlined
                 dense
                 bg-color='grey-3'
@@ -446,6 +446,21 @@
                 @click.capture="onClick"
                 @popup-hide="onPopupHide"
                 @popup-show="onPopupShow"
+              /> -->
+              <q-select
+              v-if="this.output_attributes[this.predictionIndex] !== 'mutation_name' || this.isProteinAttribute"
+              outlined
+              dense
+              bg-color='grey-3'
+              v-model="insertedValue"
+              :options="isProteinAttribute ? stringOptions['protein'] : stringOptions[output_attributes[predictionIndex]]"
+              />
+              <q-input
+              outlined
+              dense
+              bg-color="grey-3"
+              v-model="insertedValue"
+              v-if="!(this.output_attributes[this.predictionIndex] !== 'mutation_name' || this.isProteinAttribute)"
               />
             </q-card-section>
             <div class="q-pt-md row justify-evenly">
@@ -612,7 +627,7 @@ export default {
       pagination: ref({
         rowsPerPage: 200,
         sortBy: 'index',
-        descending: true
+        descending: false
       }),
       columns: [
         { name: 'index', label: '#', field: 'index',required: false, align: 'left' },
@@ -649,17 +664,17 @@ export default {
       loadGpt2: ref(false)
     }
   },
-  computed: {
-    numAnnotated () {
-      let num = 0
-      for (const row of this.paperList) {
-        if (row.annotated === true) {
-          num += 1
-        }
-      }
-      return num
-    }
-  },
+  // computed: {
+  //   numAnnotated () {
+  //     let num = 0
+  //     for (const row of this.paperList) {
+  //       if (row.annotated === true) {
+  //         num += 1
+  //       }
+  //     }
+  //     return num
+  //   }
+  // },
   methods : {
     extraction (index) {
       this.loadGpt2 = true

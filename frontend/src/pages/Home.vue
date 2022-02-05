@@ -112,9 +112,9 @@ export default {
           '/paperlist',
           { paper_list: this.paperList },
         ).then(response => {
-          this.$router.push({name: 'paperList', params: {keyword: this.keywordText}})
+          this.$router.replace({name: 'paperList', params: {keyword: this.keywordText}})
           // this.$router.resolve({ name: 'paperList', params: { chapters: [] } }).href
-          // this.$router.push({path: '/start'})
+          // this.$router.replace({path: '/start'})
         }).catch(error => (error.message))
 
       }).catch(error => (error.message))
@@ -135,7 +135,7 @@ export default {
             '/paperlist',
             { paper_list: this.paperList },
           ).then(response => {
-            this.$router.push({name: 'paperList', params: {keyword: this.DOIText}})
+            this.$router.replace({name: 'paperList', params: {keyword: this.DOIText}})
           }).catch(error => (error.message))
         }
         else{
