@@ -117,7 +117,7 @@
                 dense
                 label="Annotated Papers"
                 no-caps
-                @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers)}})"
+                @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList)}})"
                 color="primary"
               />
             </div>
@@ -129,7 +129,7 @@
                 label="New Session"
                 no-caps
                 color="primary"
-                to="/"
+                @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers)}})"
               />
             </div>
         </div>
@@ -232,7 +232,7 @@
             </div>
           </div>
         </q-card>
-        <q-card class="col-5 column no-wrap" style="height: 100%">
+        <q-card class="column no-wrap" style="height: 100%; width: 48%">
           <div class="column col-12 no-wrap">
             <div class="column justify-between no-wrap" style="overflow: auto;flex-grow: 1">
               <q-card-section class="row justify-evenly">
@@ -247,8 +247,8 @@
                     <div class="row">
                       <div class="column justify-evenly">{{instance_index + 1 + ": "}}</div>
                       <div ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance"  :key="prediction">
-                        <div class="row no-wrap" v-if="prediction.attribute === 'mutation_name'">
-                          <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = true; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_')[0] === '' ? 'Insert Value': prediction.value.split('_')[0] ">  
+                        <!-- <div class="row no-wrap" v-if="prediction.attribute === 'mutation_name'"> -->
+                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="visualize(instance_index, prediction_index)">  
                             <q-field
                             ref="editable"
                             :class="predictionIndex === prediction_index && instanceIndex === instance_index && isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
@@ -265,8 +265,8 @@
                                 </div>
                               </template>
                             </q-field>
-                          </div>
-                          <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = false; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_').slice(1).join('') === '' ? 'Insert Value': prediction.value.split('_').slice(1).join('') ">
+                          </div> -->
+                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = false; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_').slice(1).join('') === '' ? 'Insert Value': prediction.value.split('_').slice(1).join('') ">
                             <q-field
                             ref="editable"
                             :class="predictionIndex === prediction_index && instanceIndex === instance_index && !isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
@@ -283,9 +283,9 @@
                                 </div>
                               </template>
                             </q-field>
-                          </div>
-                        </div>
-                        <div class='q-pa-sm' @click="isProteinAttribute = false; visualize(instance_index, prediction_index)" style="width: 120px;height: auto" v-if="prediction.attribute !== 'mutation_name'">
+                          </div> -->
+                        <!-- </div> -->
+                        <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 120px;height: auto">
                         <q-field
                         ref="editable"
                         :class="predictionIndex === prediction_index && instanceIndex === instance_index ? 'output-field q-field--highlighted': 'output-field'"
@@ -311,10 +311,13 @@
                         </q-field>
                         </div>
                       </div>
+                      <div class="column justify-evenly q-pl-sm">
+                      <q-btn icon="remove" rounded dense color="red-4" @click="removeInstance(instance_index)" />
+                      </div>
                     </div>
                   </div>
                   <div class="q-pa-sm row justify-evenly">
-                    <q-btn rounded class="q-pa-sm" icon="add" color="primary" @click="addInstance"/>
+                    <q-btn rounded dense class="q-pa-sm" icon="add" color="primary" @click="addInstance"/>
                   </div>
                   <!-- <q-dialog v-model="showAddInstance">
                     <q-card class="" style="min-width: 50%; height: 30%">
@@ -415,7 +418,7 @@
               <q-field borderless label="Selected Attribute:" label-color='primary' stack-label>
                 <template v-slot:control>
                   <div class="self-center full-width no-outline" tabindex="0">
-                    {{ predictionIndex === 'no_index' ? 'Select a field' : (isProteinAttribute ? 'Protein' : attributeLabels[editable_predictions[instanceIndex][predictionIndex].attribute]) }}
+                    {{ predictionIndex === 'no_index' ? 'Select a field' : attributeLabels[editable_predictions[instanceIndex][predictionIndex].attribute]}}
                   </div>
                 </template>
               </q-field>
@@ -430,7 +433,8 @@
               <q-checkbox v-model="fullPaperValue" left-label class="text-primary" label="Abstract doesn't contain this information" />
             </q-card-section>
             <q-card-section>
-              <!-- <q-select
+              <div @click="firstClickNoFilters">
+              <q-select
                 outlined
                 dense
                 bg-color='grey-3'
@@ -446,21 +450,16 @@
                 @click.capture="onClick"
                 @popup-hide="onPopupHide"
                 @popup-show="onPopupShow"
-              /> -->
+                v-if="this.output_attributes[this.predictionIndex] === 'mutation_name'"
+              />
+              </div>
               <q-select
-              v-if="this.output_attributes[this.predictionIndex] !== 'mutation_name' || this.isProteinAttribute"
+              v-if="this.output_attributes[this.predictionIndex] !== 'mutation_name'"
               outlined
               dense
               bg-color='grey-3'
               v-model="insertedValue"
-              :options="isProteinAttribute ? stringOptions['protein'] : stringOptions[output_attributes[predictionIndex]]"
-              />
-              <q-input
-              outlined
-              dense
-              bg-color="grey-3"
-              v-model="insertedValue"
-              v-if="!(this.output_attributes[this.predictionIndex] !== 'mutation_name' || this.isProteinAttribute)"
+              :options="stringOptions[output_attributes[predictionIndex]]"
               />
             </q-card-section>
             <div class="q-pt-md row justify-evenly">
@@ -547,7 +546,7 @@ export default {
         })
       },
       session : ref(null),
-      isProteinAttribute: ref(false),
+      // isProteinAttribute: ref(false),
       lastPredictionIndex: ref(0),
       fullPaperValue: ref(false),
       noGpuMode: ref(false),
@@ -598,13 +597,34 @@ export default {
           'ORF1A', 'ORF1B', 'SPIKE'
         ],
         mutation_name: [],
-        effect: ['risk_of_reinfection', 'viral_load',
-       'effectiveness_of_available_antiviral_drugs', 'binding_to_Abs',
-       'binding_to_host_receptor', 'protein_stability',
-       'sensitivity_to_convalescent_sera', 'viral_transmission',
-       'sensitivity_to_neutralizing_mAbs', 'protein_flexibility',
-       'infectivity', 'intraviral_protein_protein_interaction'],
-        level: ['higher', 'lower', 'unknown']
+        level: [
+          'higher',
+          'lower',
+          'unaffected',
+          'no evidence',
+        ],
+        
+        effect: [
+          'viral_transmission',
+          'viral_virulence',
+          'disease_severity',
+          'risk_of_hospitalization',
+          'risk_of_reinfection',
+          'fatality_rate',
+          'complication_with_other_diseases',
+          'sensitivity_to_mAbs',
+          'sensitivity_to_convalescent_sera',
+          'sensitivity_to_vaccine_sera',
+          'protein_flexibilty',
+          'protein_stability',
+          'intraviral_protein_protein_interaction',
+          'binding_to_host_receptor',
+          'binding_to_Abs',
+          'viral_load',
+          'effectiveness_of_available_diagnostics',
+          'effectiveness_of_available_vaccines',
+          'effectiveness_of_available_antiviral_drugs'
+        ]
       }),
       selected: ref([]),
       highlighted_abstract: ref([{ text: '', color: 'bg-white' }]),
@@ -678,6 +698,9 @@ export default {
   methods : {
     extraction (index) {
       this.loadGpt2 = true
+      if (this.noGpuMode) {
+        this.NoGpuVisualization()
+      }
       apiGPU.post('/extract_attributes',
       {
         input: this.paperList[index].abstract,
@@ -726,7 +749,7 @@ export default {
       apiGPU.post(
         '/generateTable',
         { output_attributes: this.output_attributes, inputs: abstract_list },
-        { timeout: 9000 }
+        { timeout: 6000 }
       ).then( (response) => {
         const extracted_values_list = response.data
         for ( const [index, extracted_values] of extracted_values_list.entries()) {
@@ -741,19 +764,26 @@ export default {
         console.log('error in generatetable')
         console.log(error.message)
         error.message
-        const maxStatus = this.getSampleWithMaxWarns()
-        if (maxStatus.index !== null) {
-          this.selected = [ this.paperList[maxStatus.index] ]
-        }
-        this.currentPaper = maxStatus.index
-        this.activateNoGpuMode()
+
+        // const maxStatus = this.getSampleWithMaxWarns()
+        // if (maxStatus.index !== null) {
+        //   this.selected = [ this.paperList[maxStatus.index] ]
+        // }
+        this.currentPaper = 0
+        this.selected = [ this.paperList[0] ]
+        this.NoGpuVisualization()
       })
     },
-    activateNoGpuMode () {
+    NoGpuVisualization () {
+      if (!this.noGpuMode) {
+        this.showNotif('The prediction model is not available, users can only annotate papers')
+      }
       this.loadGpt2 = false
       this.noGpuMode = true
+      this.predictionIndex = 0
+      this.instanceIndex = 0
+      this.insertedValue = this.editable_predictions[this.instanceIndex][this.predictionIndex].value
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
-      this.showNotif('The prediction model is not available, users can only annotate papers')
     },
     count_warns (row) {
       if (!Object.keys(row).includes('extracted_values')) return row.index
@@ -781,31 +811,14 @@ export default {
       update(() => {
         const index = this.predictionIndex === 'no_index' ? 0 : this.predictionIndex
         if (val === '') {
-          if (this.output_attributes[this.prediction_index] !== 'mutation_name' && this.isProteinAttribute) {
-            this.filterOptions = this.stringOptions['protein'].filter(
-              v => v.length < 40
-            )
-          }
-          else{
-            this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
-              v => v.length < 40
-            )
-          }
-          
+          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+            v => v.length < 40
+          )
         } else {
-          if (this.output_attributes[this.prediction_index] !== 'mutation_name' && this.isProteinAttribute) {
-            const needle = val.toLowerCase()
-            this.filterOptions = this.stringOptions['protein'].filter(
-              v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
-            )
-          }
-          else{
-            const needle = val.toLowerCase()
-            this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
-              v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
-            )
-          }
-          
+          const needle = val.toLowerCase()
+          this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+            v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
+          )
         }
       })
     },
@@ -821,7 +834,7 @@ export default {
       this.insertedValue = val
     },
     onPopupShow (val) {
-      this.popupOpen = true
+        this.popupOpen = true
     },
     onPopupHide (val) {
       this.popupOpen = false
@@ -829,6 +842,7 @@ export default {
     onClick (event) {
       if (
         this.popupOpen === true
+
         // && event.target.nodeName.toLowerCase() === 'input' // only on click in input
       ) {
         event.stopImmediatePropagation()
@@ -841,24 +855,7 @@ export default {
         this.showNotif('Insert a Value')
         return
       }
-      if (this.output_attributes[this.predictionIndex] !== 'mutation_name'){
-        this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue
-      }
-      else {
-        console.log('sto modificando uno dei due')
-        if (!this.editable_predictions[this.instanceIndex][this.predictionIndex].value.includes('_')) {
-          if (this.isProteinAttribute) this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue + '_'
-          else this.editable_predictions[this.instanceIndex][this.predictionIndex].value = '_' + this.insertedValue
-        }
-        else {
-          if (this.isProteinAttribute) {
-            this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue + '_' + this.editable_predictions[this.instanceIndex][this.predictionIndex].value.split('_').slice(1).join('')
-          } else {
-            this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.editable_predictions[this.instanceIndex][this.predictionIndex].value.split('_')[0] + '_' + this.insertedValue
-          }
-        }
-      }
-      console.log(this.editable_predictions[this.instanceIndex][this.predictionIndex].value)
+      this.editable_predictions[this.instanceIndex][this.predictionIndex].value = this.insertedValue
       this.editable_predictions[this.instanceIndex][this.predictionIndex].confidence = 1
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fixed = true
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fullPaperValue = this.fullPaperValue
@@ -1036,6 +1033,9 @@ export default {
         ]
       )
     },
+    removeInstance (instance_index) {
+      this.editable_predictions.splice(instance_index, 1)
+    },
     checkSaveAndTrain () {
       for (const prediction_instance of this.editable_predictions) {
         for (const prediction of prediction_instance) {
@@ -1111,27 +1111,46 @@ export default {
         row.index = index
       }) 
     },
+    firstClickNoFilters () {
+      console.log(this.insertedValue)
+      const index = this.predictionIndex === 'no_index' ? 0 : this.predictionIndex
+      if (this.insertedValue === '') {
+        this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+          v => v.length < 40
+        )
+      } else {
+        const needle = this.insertedValue.toLowerCase()
+        this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
+          v => v.toLowerCase().indexOf(needle) > -1 && v.length < 40
+        )
+      }
+      // if (this.insertedValue === 'Insert Value') {
+      //   this.filterOptions = []
+      // }
+    }
   },
   created () {
     this.loadGpt2 = true
-    // api.get(
-    //   '/mutationValues'
-    // ).then( (response) => {
-    //   this.stringOptions.mutation_name = response.data
-    //   // console.log(response.data)
-    // }).catch( (error) => {error.message})
-    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     api.get(
-      '/paperlist'
-    ).then((response) => {
-      // api.get(
-      //   '/fixedPapers'
-      // ).then( (response) => {
-      //   this.fixedPapers = response.data
-      // })
-      this.paperList = response.data.paper_list
-      this.generateTable()
-    }).catch((error) => (error.message))
+      '/mutationValues'
+    ).then( (response) => {
+      this.stringOptions.mutation_name = response.data
+      // console.log(response.data)
+    }).catch( (error) => {error.message})
+    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+    // api.get(
+    //   '/paperlist'
+    // ).then((response) => {
+    //   // api.get(
+    //   //   '/fixedPapers'
+    //   // ).then( (response) => {
+    //   //   this.fixedPapers = response.data
+    //   // })
+    //   this.paperList = response.data.paper_list
+    //   this.generateTable()
+    // }).catch((error) => (error.message))
+    this.paperList = JSON.parse(this.$route.params.paperList)
+    this.generateTable()
   }
 }
 </script>

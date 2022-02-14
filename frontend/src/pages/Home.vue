@@ -72,6 +72,8 @@ const alertTopics = {
 export default {
   setup () {
     return {
+      fixedPapers: ref([]),
+      previousPaperList: ref([]),
       loadKey: ref(false),
       loadDoi: ref(false),
       alertTopics,
@@ -108,16 +110,20 @@ export default {
           }
         }
         this.generateIndex()
-        api.post(
-          '/paperlist',
-          { paper_list: this.paperList },
-        ).then(response => {
-          this.$router.replace({name: 'paperList', params: {keyword: this.keywordText}})
-          // this.$router.resolve({ name: 'paperList', params: { chapters: [] } }).href
-          // this.$router.replace({path: '/start'})
-        }).catch(error => (error.message))
+        this.$router.replace({name: 'paperList', params: {keyword: this.keywordText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList)}})
+        // api.post(
+        //   '/paperlist',
+        //   { paper_list: this.paperList },
+        // ).then(response => {
+        //   this.$router.replace({name: 'paperList', params: {keyword: this.keywordText}})
+        //   // this.$router.resolve({ name: 'paperList', params: { chapters: [] } }).href
+        //   // this.$router.replace({path: '/start'})
+        // }).catch(error => (error.message))
 
-      }).catch(error => (error.message))
+      }).catch(error => {
+        error.message
+        this.loadKey=false
+      })
     },
     searchByDOI () {
       api.post(
@@ -131,23 +137,35 @@ export default {
           row['added'] = false
           row['index'] = 0
           this.paperList.push(row)
-          api.post(
-            '/paperlist',
-            { paper_list: this.paperList },
-          ).then(response => {
-            this.$router.replace({name: 'paperList', params: {keyword: this.DOIText}})
-          }).catch(error => (error.message))
+          this.$router.replace({name: 'paperList', params: {keyword: this.DOIText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList)}})
+          // api.post(
+          //   '/paperlist',
+          //   { paper_list: this.paperList },
+          // ).then(response => {
+          //   this.$router.replace({name: 'paperList', params: {keyword: this.DOIText}})
+          // }).catch(error => (error.message))
         }
         else{
           this.alert = true
           this.alertContent = this.alertTopics.paper_not_found
         }
-      }).catch( (error) => {error.message})
+      }).catch( (error) => {
+        error.message
+        this.loadDoi = false
+      })
     },
     generateIndex () {
       this.paperList.forEach((row, index) => {
         row.index = index
       })
+    }
+  },
+  created () {
+    if (Object.keys(this.$route.params).includes('previousPaperList')) {
+      this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
+    }
+    if (Object.keys(this.$route.params).includes('fixedPapers')) {
+      this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     }
   }
   // name: 'PageName',

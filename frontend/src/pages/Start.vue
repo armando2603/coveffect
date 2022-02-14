@@ -310,7 +310,9 @@ export default defineComponent({
       pagination: ref({
         sortBy: 'index',
         descending: false
-      })
+      }),
+      fixedPapers: ref([]),
+      previousPaperList: ref([])
     }
   },
   methods : {
@@ -362,12 +364,10 @@ export default defineComponent({
       //     saved_list.push(element)
       //   }
       // }
-      this.generateIndex(this.selection)
-      api.post(
-        '/paperlist',
-        { paper_list: this.selection },
-      ).then( response => (this.$router.replace({name: 'AL', params: {fixedPapers: JSON.stringify([])}}))
-      ).catch(error => (error.message))
+      let newPaperList = []
+      newPaperList = this.selection.concat(this.previousPaperList)
+      this.generateIndex(newPaperList)
+      this.$router.replace({name: 'AL', params: {paperList : JSON.stringify(newPaperList), fixedPapers: JSON.stringify(this.fixedPapers)}})
     },
     findSimilar (row) {
       this.similarSelection = []
@@ -463,26 +463,52 @@ export default defineComponent({
     }
   },
   created () {
-    api.get(
-      '/paperlist'
-    ).then((response) => {
-      // this.rows = response.data.paper_list
-      for (let row of response.data.paper_list) {
-        row['similar_to'] = ''
-        row['journal'] = row.journal === '' ? 'preprint' : row.journal
-        api.post('/papers', {
-          doi: row.doi
-        }).then((response) => {
-          if (response.data['found'] == true) {
-            row['numCitedBy'] = response.data['metadata']['numCitedBy']
-            // row['journal'] = response.data['metadata']['journal']
-            this.rows.push(row)
-            this.generateIndex(this.rows)
-          }
-        }).catch(error => (error.message))
-      }
-      // console.log(this.rows[0])
-    }).catch(error => (error.message))
+    console.log('stampo previous papers senza parse')
+    console.log(this.$route.params.previousPaperList)
+    console.log('stampo previous papers con parse')
+    console.log(JSON.parse(this.$route.params.previousPaperList))
+    // console.log('doppio parse')
+    // console.log(JSON.parse(JSON.parse(this.$route.params.previousPaperList)))
+    this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
+    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+    this.paperList = JSON.parse(this.$route.params.paperList)
+    console.log(this.previousPaperList)
+    console.log(this.fixedPapers)
+    console.log(this.paperList)
+    for (let row of this.paperList) {
+      row['similar_to'] = ''
+      row['journal'] = row.journal === '' ? 'preprint' : row.journal
+      api.post('/papers', {
+        doi: row.doi
+      }).then((response) => {
+        if (response.data['found'] == true) {
+          row['numCitedBy'] = response.data['metadata']['numCitedBy']
+          // row['journal'] = response.data['metadata']['journal']
+          this.rows.push(row)
+          this.generateIndex(this.rows)
+        }
+      }).catch(error => (error.message))
+    }
+    // api.get(
+    //   '/paperlist'
+    // ).then((response) => {
+    //   // this.rows = response.data.paper_list
+    //   for (let row of response.data.paper_list) {
+    //     row['similar_to'] = ''
+    //     row['journal'] = row.journal === '' ? 'preprint' : row.journal
+    //     api.post('/papers', {
+    //       doi: row.doi
+    //     }).then((response) => {
+    //       if (response.data['found'] == true) {
+    //         row['numCitedBy'] = response.data['metadata']['numCitedBy']
+    //         // row['journal'] = response.data['metadata']['journal']
+    //         this.rows.push(row)
+    //         this.generateIndex(this.rows)
+    //       }
+    //     }).catch(error => (error.message))
+    //   }
+    //   // console.log(this.rows[0])
+    // }).catch(error => (error.message))
   }
 });
 </script>
