@@ -110,61 +110,66 @@
             </div>
         </div>
       </div>
-      <div class="row justify-end">
-        <div class="q-px-sm column justify-evenly">
-            <div class="row justify-end">
-              <q-btn
-                dense
-                label="Annotated Papers"
-                no-caps
-                @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList)}})"
-                color="primary"
-              />
-            </div>
+      <div class="row justify-between">
+        <div class="row">
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
+                  label="New Session"
+                  no-caps
+                  color="primary"
+                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers)}})"
+                />
+              </div>
+          </div>
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
+                  label="Save Session"
+                  no-caps
+                  color="primary"
+                  @click="saveSession"
+                />
+              </div>
+          </div>
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
+                  label="Load Session"
+                  no-caps
+                  color="primary"
+                  @click="this.$refs.filePicker.$el.click()"
+                />
+              </div>
+          </div>
         </div>
-        <div class="q-px-sm column justify-evenly">
-            <div class="row justify-end">
-              <q-btn
-                dense
-                label="New Session"
-                no-caps
-                color="primary"
-                @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers)}})"
-              />
-            </div>
-        </div>
-        <div class="q-px-sm column justify-evenly">
-            <div class="row justify-end">
-              <q-btn
-                dense
-                label="Save Session"
-                no-caps
-                color="primary"
-                @click="saveSession"
-              />
-            </div>
-        </div>
-        <div class="q-px-sm column justify-evenly">
-            <div class="row justify-end">
-              <q-btn
-                dense
-                label="Load Session"
-                no-caps
-                color="primary"
-                @click="this.$refs.filePicker.$el.click()"
-              />
-            </div>
-        </div>
-        <div class="q-pl-sm column justify-evenly">
-            <div class="row justify-end">
-              <q-btn
-                dense
-                icon='menu'
-                style="width:50px"
-                @click="showList = true"
-                color="primary"
-              />
-            </div>
+        <div class="row">
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
+                  label="Annotated Papers"
+                  no-caps
+                  @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList)}})"
+                  color="primary"
+                />
+              </div>
+          </div>
+          <div class="q-pl-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
+                  no-caps
+                  label="Selected Papers"
+                  
+                  @click="showList = true"
+                  color="primary"
+                />
+              </div>
+          </div>
         </div>
       </div>
       <div class="col-4 q-pt-md">
@@ -445,7 +450,6 @@
                 @input-value="onInputValue"
                 input-debounce="0"
                 :options="filterOptions"
-                new-value-mode="add-unique"
                 @filter="filterFn"
                 @click.capture="onClick"
                 @popup-hide="onPopupHide"
@@ -509,7 +513,8 @@ const visible_columns = [
   "abstract",
   "journal",
   "citations",
-  "warns"
+  "warns",
+  "year"
 ]
 
 const annotated_visible_columns = [
@@ -654,8 +659,8 @@ export default {
         { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
         { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
         { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
+        { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
-        // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
         { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
         { name: 'citations', label: 'Citations', field: 'numCitedBy', align: 'center' },
         { name: 'warns', label: 'Warnings', field: 'warns', sortable: true, align: 'center' },
@@ -925,10 +930,10 @@ export default {
         this.paperList[this.currentPaper].extracted_values = extracted_values
         this.paperList[this.currentPaper].annotated = true
         this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
-        api.post(
-          '/paperlist',
-          { paper_list: this.paperList }
-        ).catch( (error) => error.message)
+        // api.post(
+        //   '/paperlist',
+        //   { paper_list: this.paperList }
+        // ).catch( (error) => error.message)
         const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
         correctedRow.index = this.fixedPapers.length
         // console.log(correctedRow)
@@ -1092,10 +1097,6 @@ export default {
         }
         this.generateIndex(this.fixedPapers)
         this.generateIndex(this.paperList)
-        api.post(
-          '/paperlist',
-          { paper_list: this.paperList }
-        ).catch( (error) => error.message)
         // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
         // this.paperList = this.paperList.concat(sessionJSON.PaperList)
 
@@ -1150,6 +1151,7 @@ export default {
     //   this.generateTable()
     // }).catch((error) => (error.message))
     this.paperList = JSON.parse(this.$route.params.paperList)
+    console.log(this.paperList)
     this.generateTable()
   }
 }

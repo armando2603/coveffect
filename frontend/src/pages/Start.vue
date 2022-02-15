@@ -233,28 +233,30 @@ const columns = [
   { name: 'index', label: '#', field: 'index',required: true, align: 'left'},
   { name: 'cord_uid', label: 'Cord UID', field: 'cord_uid', align: 'center' },
   { name: 'doi', label: 'Doi', field: 'doi', required: true, align: 'left' },
-  { name: 'similar_to', label: 'Similar To', field: 'similar_to', align: 'center' },
+
   { name: 'title', label: 'Title', field: 'title', sortable: true, align: 'left' },
+   { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
   { name: 'authors', label: 'Authors', field: 'authors', sortable: true, align: 'left' },
   { name: 'abstract', label: 'Abstract', field: 'abstract', align: 'left' },
-  // { name: 'year', label: 'Year', field: 'year', sortable: true, align: 'left' },
   { name: 'journal', label: 'Source', field: 'journal', sortable: true, align: 'left' },
   { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' },
   { name: 'numCitedBy', label: 'Citations', field: 'numCitedBy', align: 'center' },
-  { name: 'similar', label: '', align: 'center' }
+  { name: 'similar', label: '', align: 'center' },
+   { name: 'similar_to', label: 'Similar To', field: 'similar_to', align: 'center' }
 ]
 
 const visible_columns = [
   // "cord_uid",
   "index",
   "doi",
-  "similar_to",
   "title",
   "authors",
+  "year",
   "abstract",
   "journal",
   "numCitedBy",
-  "similar"
+  "similar",
+  "similar_to",
 ]
 
 const similarVisibleColumns = [
@@ -262,6 +264,7 @@ const similarVisibleColumns = [
   "title",
   "authors",
   "abstract",
+  "year",
   "journal",
   "numCitedBy",
   // "keep",
@@ -483,6 +486,7 @@ export default defineComponent({
       }).then((response) => {
         if (response.data['found'] == true) {
           row['numCitedBy'] = response.data['metadata']['numCitedBy']
+          row['year'] = response.data['metadata']['year']
           // row['journal'] = response.data['metadata']['journal']
           this.rows.push(row)
           this.generateIndex(this.rows)
