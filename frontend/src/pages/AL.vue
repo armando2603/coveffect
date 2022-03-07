@@ -879,6 +879,15 @@ export default {
     },
     loadSelection (evt, row, index) {
       this.showList = false
+      this.editable_predictions = [
+        [
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
+        ]
+      ]
       // console.log(row)
       this.currentPaper = row.index
       this.selected = [row]
@@ -1040,6 +1049,9 @@ export default {
     },
     removeInstance (instance_index) {
       this.editable_predictions.splice(instance_index, 1)
+      if (this.editable_predictions.length === 0) {
+        this.predictionIndex = 'no_index'
+      }
     },
     checkSaveAndTrain () {
       for (const prediction_instance of this.editable_predictions) {
