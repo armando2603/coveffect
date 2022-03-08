@@ -705,6 +705,7 @@ export default {
       this.loadGpt2 = true
       if (this.noGpuMode) {
         this.NoGpuVisualization()
+        return
       }
       apiGPU.post('/extract_attributes',
       {
@@ -729,7 +730,7 @@ export default {
       }).catch((error) => {
         console.log('error extraction')
         error.message
-        this.activateNoGpuMode()
+        // this.activateNoGpuMode()
       })
     },
     visualize (instanceIndex, predictionIndex) {
@@ -879,15 +880,9 @@ export default {
     },
     loadSelection (evt, row, index) {
       this.showList = false
-      this.editable_predictions = [
-        [
-          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
-        ]
-      ]
+      if (this.editable_predictions.length === 0 ) {
+        this.addInstance()
+      }
       // console.log(row)
       this.currentPaper = row.index
       this.selected = [row]
