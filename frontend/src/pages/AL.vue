@@ -463,11 +463,12 @@
               dense
               bg-color='grey-3'
               v-model="insertedValue"
+              @update:model-value="editValue()"
               :options="stringOptions[output_attributes[predictionIndex]]"
               />
             </q-card-section>
             <div class="q-pt-md row justify-evenly">
-              <div class="q-pb-md">
+              <div v-if="this.output_attributes[this.predictionIndex] === 'mutation_name'" class="q-pb-md">
                 <q-btn label="edit" @click="editValue" rounded color="primary" />
               </div>
             </div>
@@ -877,6 +878,12 @@ export default {
           abstract: this.selected[0].abstract
         }
       )
+      this.predictionIndex = (this.predictionIndex + 1) % this.editable_predictions[0].length
+      if (this.predictionIndex === 0) {
+        this.instanceIndex = ( this.instanceIndex + 1 ) % this.editable_predictions.length
+      }
+      this.insertedValue = this.editable_predictions[this.instanceIndex][this.predictionIndex].value
+
     },
     loadSelection (evt, row, index) {
       this.showList = false
