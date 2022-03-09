@@ -116,7 +116,7 @@
               <div class="row justify-end">
                 <q-btn
                   dense
-                  label="New Session"
+                  label="Additional Search"
                   no-caps
                   color="primary"
                   @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers)}})"
@@ -419,6 +419,26 @@
             <q-card-section class="row justify-evenly">
               <div class="text-h5">Editor</div>
             </q-card-section>
+            <div class="row justify-evenly" v-if="this.output_attributes[this.predictionIndex] === 'mutation_name'">
+              <q-btn rounded color="primary" label="Annotation Guidelines" no-caps @click="showGuidelines=true" />
+            </div>
+            <q-dialog v-model="showGuidelines">
+              <q-card>
+                <q-card-section class="row justify-between">
+                  <div class="text-h5 text-primary">Annotation Guidelines</div>
+                  <div class="col-1 justify-end row">
+                    <q-btn class='' icon="close" flat round dense v-close-popup />
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div class="text-h10">
+                    Example:<br>Substitution: SPIKE_E484K<br>
+                    Deletion: SPIKE_H69-<br>
+                    Insertion: SPIKE_100A (no need for a reference)
+                  </div>
+                </q-card-section>
+              </q-card>
+            </q-dialog>
             <q-card-section>
               <q-field borderless label="Selected Attribute:" label-color='primary' stack-label>
                 <template v-slot:control>
@@ -551,6 +571,7 @@ export default {
           message: message
         })
       },
+      showGuidelines: ref(false),
       session : ref(null),
       // isProteinAttribute: ref(false),
       lastPredictionIndex: ref(0),
