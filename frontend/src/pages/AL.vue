@@ -127,6 +127,17 @@
               <div class="row justify-end">
                 <q-btn
                   dense
+                  label="New Session"
+                  no-caps
+                  color="primary"
+                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify([]), fixedPapers: JSON.stringify([this.fixedPapers])}})"
+                />
+              </div>
+          </div>
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-btn
+                  dense
                   label="Save Session"
                   no-caps
                   color="primary"
@@ -196,6 +207,15 @@
             <q-card-section class="row justify-evenly">
               <div class="text-h5">Paper Info</div>
             </q-card-section>
+            <div v-if="paperList.length > 1" class="row justify-between q-px-md">
+              <div class="no-wrap row">
+                <div class="q-pr-sm">
+                <q-btn icon="arrow_left" rounded dense color="primary" @click="if (currentPaper > 0) currentPaper -= 1; extraction(currentPaper)" />
+                </div>
+                <q-btn icon="arrow_right" rounded dense color="primary" @click="if (currentPaper < (paperList.length -1)) currentPaper += 1; extraction(currentPaper)" />
+              </div>
+              <q-btn label="Remove Paper" no-caps rounded color="red-4" dense @click="removePaper" />
+            </div>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
                 <q-field stack-label borderless label-color="primary" label='Paper:'>
@@ -629,6 +649,7 @@ export default {
           'lower',
           'unaffected',
           'no evidence',
+          'undefined'
         ],
         
         effect: [
@@ -1163,6 +1184,10 @@ export default {
       // if (this.insertedValue === 'Insert Value') {
       //   this.filterOptions = []
       // }
+    },
+    removePaper () {
+      this.paperList.splice(this.currentPaper, 1)
+      this.extraction(this.currentPaper)
     }
   },
   created () {
