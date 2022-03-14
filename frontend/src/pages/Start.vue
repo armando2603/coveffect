@@ -295,6 +295,7 @@ export default defineComponent({
           message: message
         })
       },
+      sessionName: ref(null),
       searchKeyword: ref(''),
       doi : ref(''),
       alert : ref(false),
@@ -370,7 +371,7 @@ export default defineComponent({
       let newPaperList = []
       newPaperList = this.selection.concat(this.previousPaperList)
       this.generateIndex(newPaperList)
-      this.$router.replace({name: 'AL', params: {paperList : JSON.stringify(newPaperList), fixedPapers: JSON.stringify(this.fixedPapers)}})
+      this.$router.replace({name: 'AL', params: {paperList : JSON.stringify(newPaperList), fixedPapers: JSON.stringify(this.fixedPapers), sessionName: this.sessionName}})
     },
     findSimilar (row) {
       this.similarSelection = []
@@ -466,18 +467,19 @@ export default defineComponent({
     }
   },
   created () {
-    console.log('stampo previous papers senza parse')
-    console.log(this.$route.params.previousPaperList)
-    console.log('stampo previous papers con parse')
-    console.log(JSON.parse(this.$route.params.previousPaperList))
+    // console.log('stampo previous papers senza parse')
+    // console.log(this.$route.params.previousPaperList)
+    // console.log('stampo previous papers con parse')
+    // console.log(JSON.parse(this.$route.params.previousPaperList))
     // console.log('doppio parse')
     // console.log(JSON.parse(JSON.parse(this.$route.params.previousPaperList)))
     this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     this.paperList = JSON.parse(this.$route.params.paperList)
-    console.log(this.previousPaperList)
-    console.log(this.fixedPapers)
-    console.log(this.paperList)
+    this.sessionName = this.$route.params.sessionName
+    // console.log(this.previousPaperList)
+    // console.log(this.fixedPapers)
+    // console.log(this.paperList)
     for (let row of this.paperList) {
       row['similar_to'] = ''
       row['journal'] = row.journal === '' ? 'preprint' : row.journal

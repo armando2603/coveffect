@@ -89,6 +89,7 @@ const alertTopics = {
 export default {
   setup () {
     return {
+      sessionName: ref(null),
       session: ref(null),
       fixedPapers: ref([]),
       previousPaperList: ref([]),
@@ -128,7 +129,7 @@ export default {
           }
         }
         this.generateIndex()
-        this.$router.replace({name: 'paperList', params: {keyword: this.keywordText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList)}})
+        this.$router.replace({name: 'paperList', params: {keyword: this.keywordText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList), sessionName: this.sessionName}})
         // api.post(
         //   '/paperlist',
         //   { paper_list: this.paperList },
@@ -155,7 +156,7 @@ export default {
           row['added'] = false
           row['index'] = 0
           this.paperList.push(row)
-          this.$router.replace({name: 'paperList', params: {keyword: this.DOIText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList)}})
+          this.$router.replace({name: 'paperList', params: {keyword: this.DOIText, paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList), sessionName: this.sessionName}})
           // api.post(
           //   '/paperlist',
           //   { paper_list: this.paperList },
@@ -186,13 +187,14 @@ export default {
       // console.log(sessionJSON)
       this.fixedPapers = sessionJSON.annotatedPapers
       this.previousPaperList = sessionJSON.paperList
+      this.sessionName = sessionJSON.sessionName
       // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
       // this.paperList = this.paperList.concat(sessionJSON.PaperList)
       // reader.result
       // this.fileGEO = null
       // console.log(this.fixedPapers)
       // console.log(this.paperList)
-      this.$router.replace({name: 'AL', params: {paperList: JSON.stringify(this.previousPaperList), fixedPapers: JSON.stringify(this.fixedPapers)}})
+      this.$router.replace({name: 'AL', params: {paperList: JSON.stringify(this.previousPaperList), fixedPapers: JSON.stringify(this.fixedPapers), sessionName: this.sessionName}})
     }
     reader.readAsText(session)
   
@@ -237,7 +239,9 @@ export default {
     //     event.returnValue = 'Write something'
     //     // this.$router.push('/')
     // })
-
+    if (Object.keys(this.$route.params).includes('sessionName')) {
+      this.sessionName = this.$route.params.sessionName
+    }
     if (Object.keys(this.$route.params).includes('previousPaperList')) {
       this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
     }

@@ -119,7 +119,7 @@
                   label="Additional Search"
                   no-caps
                   color="primary"
-                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers)}})"
+                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), sessionName: this.sessionName}})"
                 />
               </div>
           </div>
@@ -130,7 +130,7 @@
                   label="New Session"
                   no-caps
                   color="primary"
-                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify([]), fixedPapers: JSON.stringify([this.fixedPapers])}})"
+                  @click="this.$router.replace({name: 'home', params: {previousPaperList: JSON.stringify([]), fixedPapers: JSON.stringify([]), sessionName: null}})"
                 />
               </div>
           </div>
@@ -156,6 +156,11 @@
                 />
               </div>
           </div>
+          <div class="q-px-sm column justify-evenly">
+              <div class="row justify-end">
+                <q-badge style="height: 31px" color="primary" class="text-bold text-subtitle2" label="Session Name:"/><div class="q-pl-sm column justify-evenly"><span class="text-grey-8">{{sessionName === null ? 'No Session Name' : ' ' + sessionName}}</span></div>
+              </div>
+          </div>
         </div>
         <div class="row">
           <div class="q-px-sm column justify-evenly">
@@ -164,7 +169,7 @@
                   dense
                   label="Annotated Papers"
                   no-caps
-                  @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList)}})"
+                  @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList), sessionName: this.sessionName}})"
                   color="primary"
                 />
               </div>
@@ -238,11 +243,11 @@
                     <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].authors}}</div>
                   </template>
                 </q-field>
-                <!-- <q-field stack-label borderless label-color="primary" label='Year:'>
+                <q-field stack-label borderless label-color="primary" label='Year:'>
                   <template v-slot:control>
                     <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].year}}</div>
                   </template>
-                </q-field> -->
+                </q-field>
                 <q-field stack-label borderless label-color="primary" label='Source:'>
                   <template v-slot:control>
                     <div class="self-center full-width no-outline" tabindex="0">{{paperList.length === 0 ? '' : paperList[currentPaper].journal}}</div>
@@ -392,12 +397,37 @@
                 </div>    
               </q-card-section>
               <q-card-section class="row q-pb-md justify-evenly">
-                <q-btn unelevate color='primary' label='save' @click="checkSaveAndTrain"/>
+                <q-btn unelevate color='primary' label='save' @click="sessionName === null ? showSessionNameEdit = true : checkSaveAndTrain()"/>
               </q-card-section>
             </div>
           </div>
         </q-card>
-        <q-dialog v-model="confirmSaveAndTrain" persistent>
+        <q-dialog v-model="showSessionNameEdit">
+          <q-card>
+            <q-card-section class="row justify-between">
+              <div class="text-h5 text-primary">Insert Session Name</div>
+              <div class="col-1 justify-end row">
+                <q-btn class='' icon="close" flat round dense v-close-popup />
+              </div>
+            </q-card-section>
+            <q-card-section>
+              <div>
+                Please insert a session name before save annotations
+              </div>
+            </q-card-section>
+            <q-card-section>
+              <div>
+                <q-input outlined placeholder="Insert Session Name"  bottom-slots v-model="sessionName" stack-label/>
+              </div>
+            </q-card-section>
+            <q-card-section class="row justify-evenly">
+              <div>
+                <q-btn rounded color="primary" no-caps label="Insert Session Name" @click="sessionName!== null ? checkSaveAndTrain() : showNotif('Please insert a Session Name')"/>
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+        <q-dialog v-model="showSaveAndTrain" persistent>
           <q-card style="width: 350px">
             <q-card-section>
               <div class='justify-evenly row'>
@@ -429,7 +459,7 @@
             </q-card-section>
 
             <q-card-actions v-if='!loadingRegenerating && !loadingRetraining' class="row justify-evenly">
-              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;confirmSaveAndTrain=false'/>
+              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;showSaveAndTrain=false'/>
               <q-btn class="q-pb-sm" flat label="Yes" @click='saveAndTrain()' color="primary"/>
             </q-card-actions>
           </q-card>
@@ -605,6 +635,8 @@ export default {
           message: message
         })
       },
+      showSessionNameEdit: ref(false),
+      sessionName: ref(null),
       showGuidelines: ref(false),
       session : ref(null),
       // isProteinAttribute: ref(false),
@@ -737,7 +769,7 @@ export default {
       //   // { name: 'level', label: 'Level', field: (row) => row.extracted_values.level.value, sortable: true, align: 'left' }
       //   // { name: 'keep', label: 'Keep', field: 'keep', sortable: false, align: 'center' }
       // ],
-      confirmSaveAndTrain: ref(false),
+      showSaveAndTrain: ref(false),
       loadingRetraining: ref(false),
       loadingRegenerating: ref(false),
       loadStatus: ref(0),
@@ -927,6 +959,7 @@ export default {
       this.feedback_list.push(
         {
           timestamp: Date(),
+          sessionName: this.sessionName,
           value: this.insertedValue,
           attribute: this.editable_predictions[this.instanceIndex][this.predictionIndex].attribute,
           doi: this.selected[0].doi,
@@ -1002,6 +1035,8 @@ export default {
         // console.log(extracted_values)
         this.paperList[this.currentPaper].extracted_values = extracted_values
         this.paperList[this.currentPaper].annotated = true
+        this.paperList[this.currentPaper].annotationTime = Date()
+        this.paperList[this.currentPaper].annotator = this.sessionName
         this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
         // api.post(
         //   '/paperlist',
@@ -1013,7 +1048,7 @@ export default {
         this.fixedPapers.push(correctedRow)
         // console.log(this.fixedPapers)
         this.storeFixedPapers()
-        this.confirmSaveAndTrain = false
+        this.showSaveAndTrain = false
         this.showNotif('Your annotations have been saved', 'green-5', '')
         return
       }
@@ -1071,10 +1106,10 @@ export default {
           }
           this.storeFixedPapers()
           this.resetPage()
-          this.confirmSaveAndTrain = false
+          this.showSaveAndTrain = false
         }).catch(error => {
           console.log(error.message)
-          this.confirmSaveAndTrain = false
+          this.showSaveAndTrain = false
         })
         this.loadStatus = 0
         this.getLoadStatus()
@@ -1118,6 +1153,7 @@ export default {
       }
     },
     checkSaveAndTrain () {
+      this.showSessionNameEdit = false
       for (const prediction_instance of this.editable_predictions) {
         for (const prediction of prediction_instance) {
           if (prediction.value === '' || prediction.value === 'Insert Value') {
@@ -1126,12 +1162,13 @@ export default {
           }
         }
       }
-      this.confirmSaveAndTrain = true
+      this.showSaveAndTrain = true
     },
     saveSession () {
       const session = {
         annotatedPapers: this.fixedPapers,
-        paperList: this.paperList
+        paperList: this.paperList,
+        sessionName: this.sessionName
       }
       exportFile(
         'session.json',
@@ -1158,6 +1195,8 @@ export default {
             this.fixedPapers.push(newRow)
           }
         }
+
+        this.sessionName = sessionJSON.sessionName
 
         for (const newRow of sessionJSON.paperList) {
           let notExist = true
@@ -1230,6 +1269,7 @@ export default {
     //   this.paperList = response.data.paper_list
     //   this.generateTable()
     // }).catch((error) => (error.message))
+    this.sessionName = this.$route.params.sessionName
     this.paperList = JSON.parse(this.$route.params.paperList)
     console.log(this.paperList)
     this.generateTable()

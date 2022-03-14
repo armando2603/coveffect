@@ -18,7 +18,7 @@
           >
           <template v-slot:top>
             <div class="row justify-start col-10" >
-              <q-btn icon="arrow_back" rounded color="red-4" @click="this.$router.replace({name: 'AL', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList)}})" />
+              <q-btn icon="arrow_back" rounded color="red-4" @click="this.$router.replace({name: 'AL', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList), sessionName: this.sessionName}})" />
               <div class="text-h5 text-primary q-pl-md q-pr-md">
                 Annotated Papers List
               </div>
@@ -121,6 +121,7 @@ export default {
   // name: 'PageName',
   setup () {
     return {
+      sessionName: ref(null),
       visible_columns,
       paperList: ref([]),
       showExtractedValues: ref(false),
@@ -199,6 +200,7 @@ export default {
     this.currentPaper = 0
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     this.paperList = JSON.parse(this.$route.params.paperList)
+    this.sessionName = this.$route.params.sessionName
     // api.get(
     //   '/fixedPapers'
     // ).then( (response) => {
