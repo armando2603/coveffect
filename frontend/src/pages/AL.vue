@@ -263,7 +263,7 @@
               <q-card-section class="row justify-evenly">
                 <div class="text-h5">Extracted Annotations</div>
               </q-card-section>
-              <q-card-section style="overflow: auto; flex-grow: 1;">
+              <q-card-section style="overflow: auto; flex-grow: 1;max-height: 400px">
                 <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
                   <q-spinner color="primary" size="6em" />
                 </div>
@@ -443,7 +443,7 @@
               <q-btn rounded color="primary" label="Annotation Guidelines" no-caps @click="showGuidelines=true" />
             </div>
             <q-dialog v-model="showGuidelines">
-              <q-card>
+              <q-card style="max-width: 70%">
                 <q-card-section class="row justify-between">
                   <div class="text-h5 text-primary">Annotation Guidelines</div>
                   <div class="col-1 justify-end row">
@@ -452,9 +452,23 @@
                 </q-card-section>
                 <q-card-section>
                   <div class="text-h10">
-                    Example:<br>Substitution: SPIKE_E484K<br>
-                    Deletion: SPIKE_H69-<br>
-                    Insertion: SPIKE_100A (no need for a reference)
+                    <div class="text-primary">Examples:</div>
+                    <span class="text-bold">Substitution: </span>SPIKE_E484K<br>
+                    <span class="text-bold">Deletion: </span>SPIKE_H69-<br>
+                    <span class="text-bold">Insertion: </span>SPIKE_100A (no need for a reference)<br>
+                    <br>
+                    <div class="text-primary">Group Mutation Example:</div>
+                    In this example the two mutation have to be interpreted as ONE group that has one effect<br>
+                    <span class="text-bold">Abstract text: </span>The joint presence of N501Y and A222V leads to higher transmissibility<br>
+                    <span class="text-bold">Rule: </span>List the mutations separated by "+"<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y + Spike_A222V"<br>
+                    <br>
+                    <div class="text-primary">Multiple Single Mutation with same effect-level:</div>
+                    If several single mutation have the same effect-level is possible to annotate them as follow<br>
+                    <span class="text-bold">Abstract text: </span>Mutations N501Y, A222V and K417N lead to an increase of the transmissibility of the virus <br>
+                    <span class="text-bold">Rule: </span>List mutations separated by ","<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y, Spike_A222V, Spike_K417N"<br>
+
                   </div>
                 </q-card-section>
               </q-card>
@@ -972,12 +986,18 @@ export default {
       ).catch( (error) => (error.message))
       if (this.noGpuMode === true) {
         let extracted_values = []
-        for (const instance of this.editable_predictions) {
-          let output_instance = {}
-          for (const [index, attribute] of this.output_attributes.entries()) {
-            output_instance[attribute] = instance[index]
+        for (let instance of this.editable_predictions) {
+          // console.log(tmp_instance[1])
+          for (const mutation_name of instance[1].value.split(",")) {
+            let tmp_instance = JSON.parse(JSON.stringify(instance))
+            tmp_instance[1].value = mutation_name.trim()
+            let output_instance = {}
+            for (const [index, attribute] of this.output_attributes.entries()) {
+              output_instance[attribute] = tmp_instance[index]
+            }
+            extracted_values.push(output_instance)
+
           }
-          extracted_values.push(output_instance)
         }
         // console.log(extracted_values)
         this.paperList[this.currentPaper].extracted_values = extracted_values
@@ -1169,7 +1189,7 @@ export default {
       }) 
     },
     firstClickNoFilters () {
-      console.log(this.insertedValue)
+      // console.log(this.insertedValue)
       const index = this.predictionIndex === 'no_index' ? 0 : this.predictionIndex
       if (this.insertedValue === '') {
         this.filterOptions = this.stringOptions[this.output_attributes[index]].filter(
