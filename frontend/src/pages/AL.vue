@@ -699,6 +699,7 @@ export default {
         ],
         
         effect: [
+          'infectivity',
           'viral_transmission',
           'viral_virulence',
           'disease_severity',
