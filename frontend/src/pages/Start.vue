@@ -477,6 +477,7 @@ export default defineComponent({
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     this.paperList = JSON.parse(this.$route.params.paperList)
     this.sessionName = this.$route.params.sessionName
+    // console.log(this.$route.params.sessionName)
     // console.log(this.previousPaperList)
     // console.log(this.fixedPapers)
     // console.log(this.paperList)

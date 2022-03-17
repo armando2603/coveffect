@@ -158,7 +158,7 @@
           </div>
           <div class="q-px-sm column justify-evenly">
               <div class="row justify-end">
-                <q-badge style="height: 31px" color="primary" class="text-bold text-subtitle2" label="Session Name:"/><div class="q-pl-sm column justify-evenly"><span class="text-grey-8">{{sessionName === null ? 'No Session Name' : ' ' + sessionName}}</span></div>
+                <q-badge style="height: 31px" color="primary" class="text-bold text-subtitle2" label="Session Name:"/><div class="q-pl-sm column justify-evenly"><span class="text-grey-8">{{sessionName === null || sessionName === '' ? 'No Session Name' : ' ' + sessionName}}</span></div>
               </div>
           </div>
         </div>
@@ -397,7 +397,7 @@
                 </div>    
               </q-card-section>
               <q-card-section class="row q-pb-md justify-evenly">
-                <q-btn unelevate color='primary' label='save' @click="sessionName === null ? showSessionNameEdit = true : checkSaveAndTrain()"/>
+                <q-btn unelevate color='primary' label='save' @click="sessionName === null  || sessionName === ''  ? showSessionNameEdit = true : checkSaveAndTrain()"/>
               </q-card-section>
             </div>
           </div>
