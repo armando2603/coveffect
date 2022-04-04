@@ -739,6 +739,11 @@ export default {
         'effect',
         'level'
       ]),
+      predictionAttributes: ref([
+        { value: 'mutation_name', multiple: true},
+        { value: 'effect', multiple: true},
+        { value: 'level', multiple: false}
+      ]),
       pagination: ref({
         rowsPerPage: 200,
         sortBy: 'index',
@@ -797,28 +802,44 @@ export default {
         this.NoGpuVisualization()
         return
       }
-      apiGPU.post('/extract_attributes',
+      apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
-        output_attributes: this.output_attributes
-      },
-      {
-        timeout: 6000
+        output_attributes: this.predictionAttributes
       }).then( (response) => {
-        this.editable_predictions =  [JSON.parse(JSON.stringify(response.data.outputs))]
+        console.log('estrazione è avvenuta')
+        this.editable_predictions = JSON.parse(JSON.stringify(response.data.outputs))
+        console.log(this.editable_predictions)
         for (const [instance_index, instance] of this.editable_predictions.entries()){
           for (const prediction_index in instance) {
             this.editable_predictions[instance_index][prediction_index].fullPaperValue = false
           }
+          let mutationTypeOutput = {
+            value: null,
+            attribute: "mutation_type",
+            confidence: 1,
+            fullPaperValue: false
+          }
+          if (this.editable_predictions[instance_index][0].value.split('+').length > 1) {
+            mutationTypeOutput.value = 'group'
+          } else if (this.editable_predictions[instance_index][0].value.split('_').length > 1) {
+            mutationTypeOutput.value = 'single'
+          } else {
+            mutationTypeOutput.value = 'variant'
+          }
+          this.editable_predictions[instance_index].splice(0, 0, mutationTypeOutput)
         }
+
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
-        this.saliency_maps = [response.data.saliency_map]
+        // this.saliency_maps = [response.data.saliency_map]
+        this.saliency_maps = []
+        this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
         this.loadGpt2 = false
         this.visualize(0, 0)
       }).catch((error) => {
-        console.log('error extraction')
+        console.log('extrazione non è avvenuta')
         error.message
         // this.activateNoGpuMode()
       })
@@ -841,6 +862,9 @@ export default {
       for ( const paper of this.paperList) {
         abstract_list.push(paper.abstract)
       }
+      this.resetPage()
+
+      return
       // this.showNotif('The GPU server is not available, users can only annotate papers')
       apiGPU.post(
         '/generateTable',
@@ -994,11 +1018,12 @@ export default {
       // console.log('anche qua ci arrivo')
       this.editable_predictions = []
       this.feedback_list = []
-      const maxStatus = this.getSampleWithMaxWarns()
-      if (maxStatus.index !== null) {
-        this.selected = [ this.paperList[maxStatus.index] ]
-      }
-      this.currentPaper = maxStatus.index
+      // const maxStatus = this.getSampleWithMaxWarns()
+      // if (maxStatus.index !== null) {
+      //   this.selected = [ this.paperList[maxStatus.index] ]
+      // }
+      // this.currentPaper = maxStatus.index
+      this.currentPaper = 0
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
     },
@@ -1272,7 +1297,7 @@ export default {
     // }).catch((error) => (error.message))
     this.sessionName = this.$route.params.sessionName
     this.paperList = JSON.parse(this.$route.params.paperList)
-    console.log(this.paperList)
+    // console.log(this.paperList)
     this.generateTable()
   }
 }
