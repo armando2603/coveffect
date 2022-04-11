@@ -807,8 +807,9 @@ export default {
         input: this.paperList[index].abstract,
         output_attributes: this.predictionAttributes
       }).then( (response) => {
-        console.log('estrazione è avvenuta')
+        console.log('risposta positiva da gpu')
         this.editable_predictions = JSON.parse(JSON.stringify(response.data.outputs))
+        console.log('editable predicitons :')
         console.log(this.editable_predictions)
         for (const [instance_index, instance] of this.editable_predictions.entries()){
           for (const prediction_index in instance) {
@@ -818,6 +819,7 @@ export default {
             value: null,
             attribute: "mutation_type",
             confidence: 1,
+            saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }],
             fullPaperValue: false
           }
           if (this.editable_predictions[instance_index][0].value.split('+').length > 1) {
@@ -834,12 +836,16 @@ export default {
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
         // this.saliency_maps = [response.data.saliency_map]
-        this.saliency_maps = []
-        this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
+        // this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
+        console.log('saliency_map')
+        console.log(this.editable_predictions[0][1].saliency_map)
+        if (this.editable_predictions.length > 0) {
+          this.highlighted_abstract = this.editable_predictions[0][1].saliency_map
+        }
         this.loadGpt2 = false
-        this.visualize(0, 0)
+        this.visualize(0, 1)
       }).catch((error) => {
-        console.log('extrazione non è avvenuta')
+        console.log('risposta da gpu non è andata')
         error.message
         // this.activateNoGpuMode()
       })
@@ -854,7 +860,7 @@ export default {
       this.instanceIndex = instanceIndex
       this.predictionIndex = predictionIndex
       this.insertedValue = this.editable_predictions[instanceIndex][predictionIndex].value
-      if (this.saliency_maps.length > 0) this.highlighted_abstract = this.saliency_maps[instanceIndex][predictionIndex][0]
+      this.highlighted_abstract = this.editable_predictions[instanceIndex][predictionIndex].saliency_map
 
     },
     generateTable () {
