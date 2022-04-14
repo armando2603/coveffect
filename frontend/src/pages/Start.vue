@@ -407,6 +407,7 @@ export default defineComponent({
             }).then((response) => {
               if (response.data['found'] == true) {
                 similar['numCitedBy'] = response.data['metadata']['numCitedBy']
+                similar['annotated'] = false
                 similar['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
                 this.similarPapers.push(similar)
                 this.generateIndex(this.similarPapers)
@@ -489,6 +490,7 @@ export default defineComponent({
       }).then((response) => {
         if (response.data['found'] == true) {
           row['numCitedBy'] = response.data['metadata']['numCitedBy']
+          row['annotated'] = false
           row['year'] = response.data['metadata']['year']
           // row['journal'] = response.data['metadata']['journal']
           this.rows.push(row)

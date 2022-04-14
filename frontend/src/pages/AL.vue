@@ -746,8 +746,8 @@ export default {
       ]),
       pagination: ref({
         rowsPerPage: 200,
-        sortBy: 'index',
-        descending: false
+        sortBy: 'warns',
+        descending: true
       }),
       columns: [
         { name: 'index', label: '#', field: 'index',required: false, align: 'left' },
@@ -809,8 +809,8 @@ export default {
       }).then( (response) => {
         console.log('risposta positiva da gpu')
         this.editable_predictions = JSON.parse(JSON.stringify(response.data.outputs))
-        console.log('editable predicitons :')
-        console.log(this.editable_predictions)
+        // console.log('editable predicitons :')
+        // console.log(this.editable_predictions)
         for (const [instance_index, instance] of this.editable_predictions.entries()){
           for (const prediction_index in instance) {
             this.editable_predictions[instance_index][prediction_index].fullPaperValue = false
@@ -832,18 +832,19 @@ export default {
           this.editable_predictions[instance_index].splice(0, 0, mutationTypeOutput)
         }
 
+
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
         // this.saliency_maps = [response.data.saliency_map]
         // this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
-        console.log('saliency_map')
-        console.log(this.editable_predictions[0][1].saliency_map)
+        // console.log('saliency_map')
+        // console.log(this.editable_predictions[0][1].saliency_map)
         if (this.editable_predictions.length > 0) {
           this.highlighted_abstract = this.editable_predictions[0][1].saliency_map
+          this.visualize(0, 1)
         }
         this.loadGpt2 = false
-        this.visualize(0, 1)
       }).catch((error) => {
         console.log('risposta da gpu non è andata')
         error.message
@@ -868,23 +869,27 @@ export default {
       for ( const paper of this.paperList) {
         abstract_list.push(paper.abstract)
       }
-      this.resetPage()
+      // this.resetPage()\
 
-      return
       // this.showNotif('The GPU server is not available, users can only annotate papers')
       apiGPU.post(
-        '/generateTable',
-        { output_attributes: this.output_attributes, inputs: abstract_list },
-        { timeout: 6000 }
+        '/generate_table',
+        { output_attributes: this.predictionAttributes, inputs: abstract_list }
       ).then( (response) => {
         const extracted_values_list = response.data
-        for ( const [index, extracted_values] of extracted_values_list.entries()) {
-          if (this.paperList[index].annotated === false){
-            this.paperList[index]['extracted_values'] = [extracted_values]
-          }
+        console.log('extracted values of paper list')
+        console.log(extracted_values_list)
 
+        for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          // if (this.paperList[index].annotated === false){
+          //   this.paperList[index]['extracted_values'] = extracted_values
+          // }
+          this.paperList[index]['extracted_values'] = extracted_values
           this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
         }
+        // console.log('count warns works')
+        // console.log('paper list')
+        // console.log(this.paperList)
         this.resetPage()
       }).catch( (error) => {
         console.log('error in generatetable')
@@ -912,11 +917,14 @@ export default {
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
     },
     count_warns (row) {
-      if (!Object.keys(row).includes('extracted_values')) return row.index
+      if (!Object.keys(row).includes('extracted_values')) return 0
       var nWarn = 0
       for (const prediction_instance of row.extracted_values) {
-        for (var attribute of this.output_attributes) {
-          if (prediction_instance[attribute].confidence < this.redThreshold) {
+        // console.log('prediction_instance')
+
+        // console.log(prediction_instance)
+        for (const output_attribute of prediction_instance) {
+          if (output_attribute.confidence < this.redThreshold) {
             nWarn += 1
           }
         }
@@ -1022,14 +1030,16 @@ export default {
       // console.log(this.selected)
       // this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
       // console.log('anche qua ci arrivo')
+      this.predictionIndex = 'no_index'
+      this.instanceIndex = 0
       this.editable_predictions = []
       this.feedback_list = []
-      // const maxStatus = this.getSampleWithMaxWarns()
-      // if (maxStatus.index !== null) {
-      //   this.selected = [ this.paperList[maxStatus.index] ]
-      // }
-      // this.currentPaper = maxStatus.index
-      this.currentPaper = 0
+      const maxStatus = this.getSampleWithMaxWarns()
+      if (maxStatus.index !== null) {
+        this.selected = [ this.paperList[maxStatus.index] ]
+      }
+      this.currentPaper = maxStatus.index
+      // this.currentPaper = 0
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
     },
@@ -1064,6 +1074,8 @@ export default {
 
           }
         }
+
+
         // console.log(extracted_values)
         this.paperList[this.currentPaper].extracted_values = extracted_values
         this.paperList[this.currentPaper].annotated = true
@@ -1085,18 +1097,46 @@ export default {
         return
       }
       this.loadingRetraining = true
-      const outputs = []
+      let extracted_values = []
+      for (let instance of this.editable_predictions) {
+        // console.log(tmp_instance[1])
+        for (const mutation_name of instance[1].value.split(",")) {
+          let tmp_instance = JSON.parse(JSON.stringify(instance))
+          tmp_instance[1].value = mutation_name.trim()
+          let output_instance = {}
+          for (const [index, attribute] of this.output_attributes.entries()) {
+            output_instance[attribute] = tmp_instance[index]
+          }
+          extracted_values.push(output_instance)
+
+        }
+      }
+
+      this.paperList[this.currentPaper].extracted_values = extracted_values
+      this.paperList[this.currentPaper].annotated = true
+      this.paperList[this.currentPaper].annotationTime = Date()
+      this.paperList[this.currentPaper].annotator = this.sessionName
+      // this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
+      const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+      correctedRow.index = this.fixedPapers.length
+      // console.log(correctedRow)
+      this.fixedPapers.push(correctedRow)
+      // console.log(this.fixedPapers)
+      this.storeFixedPapers()
+
+
+      // console.log(extracted_values)
       // for (const output of this.editable_predictions) {
       //   if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })
       // }
-      for (const output of this.editable_predictions) {
-        outputs.push({ attribute: output.attribute, value: output.value })
-      }
+      // for (const output of this.editable_predictions) {
+      //   outputs.push({ attribute: output.attribute, value: output.value })
+      // }
       apiGPU.post(
-        '/saveAndTrain',
+        '/save_and_train',
         {
-          input_text: this.paperList[this.predictionIndex].abstract,
-          outputs: outputs
+          input_text: this.paperList[this.currentPaper].abstract,
+          outputs: extracted_values
         }
       ).then((response) => {
         const inputList = []
@@ -1104,13 +1144,29 @@ export default {
           inputList.push(row.abstract)
         }
         // TODO: aggiungi il sample modificato alla lista dei sample modificati
-
+        
         this.loadingRetraining = false
         this.loadingRegenerating = true
         apiGPU.post(
-          '/generateTable',
-          { output_attributes: this.output_attributes, inputs: inputList }
+          '/generate_table',
+          { output_attributes: this.predictionAttributes, inputs: inputList }
         ).then((response) => {
+          const extracted_values_list = response.data
+          console.log('extracted values of paper list')
+          console.log(extracted_values_list)
+
+          for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            // if (this.paperList[index].annotated === false){
+            //   this.paperList[index]['extracted_values'] = extracted_values
+            // }
+            this.paperList[index]['extracted_values'] = extracted_values
+            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          }
+
+
+
+          console.log('count warns works')
+          this.loadingRegenerating = false
           // this.dataset_json[this.datasetType] = response.data
           // for (const [index, row] of this.paperList.entries()) {
           //   for (const attribute of this.output_attributes) {
@@ -1122,22 +1178,22 @@ export default {
           //       newTable[index].fields[field].fixed = true
           //     }
           //   }
-          //   this.loadingRegenerating = false
           // }
-          const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
-          correctedRow.index = this.fixedPapers.length
-          this.fixedPapers.push(correctedRow)
-          const extracted_values_list = response.data
-          for ( const [index, extracted_values] of extracted_values_list.entries()) {
-            this.paperList[index]['extracted_values'] = extracted_values
-            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
-          }
-          this.paperList.splice(this.currentPaper, 1)
-          for (const [newIndex, row] of this.paperList.entries()) {
-            this.paperList[newIndex].index = newIndex
-          }
-          this.storeFixedPapers()
+          // const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+          // correctedRow.index = this.fixedPapers.length
+          // this.fixedPapers.push(correctedRow)
+          // const extracted_values_list = response.data
+          // for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          //   this.paperList[index]['extracted_values'] = extracted_values
+          //   this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          // }
+          // this.paperList.splice(this.currentPaper, 1)
+          // for (const [newIndex, row] of this.paperList.entries()) {
+          //   this.paperList[newIndex].index = newIndex
+          // }
+          // this.storeFixedPapers()
           this.resetPage()
+          this.showNotif('Your annotations have been saved', 'green-5', '')
           this.showSaveAndTrain = false
         }).catch(error => {
           console.log(error.message)
@@ -1149,6 +1205,7 @@ export default {
         console.log(error.message)
         this.loadingRetraining = false
       })
+
       // seleziono paper subito dopo
       // this.selected = [this.paperList[this.selected[0].index + 1]]
       // this.loadSelection()
@@ -1170,11 +1227,11 @@ export default {
     addInstance () {
       this.editable_predictions.push(
         [
-          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
           // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] }
         ]
       )
     },
