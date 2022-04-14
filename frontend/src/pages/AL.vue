@@ -212,20 +212,20 @@
             <q-card-section class="row justify-evenly">
               <div class="text-h5">Paper Info</div>
             </q-card-section>
-            <div v-if="paperList.length > 1" class="row justify-between q-px-md">
-              <div class="no-wrap row">
+            <div v-if="paperList.length > 1" class="row justify-evenly q-px-md">
+              <!-- <div class="no-wrap row">
                 <div class="q-pr-sm">
                 <q-btn icon="arrow_left" rounded dense color="primary" @click="if (currentPaper > 0) currentPaper -= 1; extraction(currentPaper)" />
                 </div>
                 <q-btn icon="arrow_right" rounded dense color="primary" @click="if (currentPaper < (paperList.length -1)) currentPaper += 1; extraction(currentPaper)" />
-              </div>
+              </div> -->
               <q-btn label="Remove Paper" no-caps rounded color="red-4" dense @click="removePaper" />
             </div>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
-                <q-field stack-label borderless label-color="primary" label='Paper:'>
+                <q-field stack-label borderless label-color="primary" label='Annotated Papers:'>
                   <template v-slot:control>
-                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{currentPaper + 1 + "/" + paperList.length}}</div>
+                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotatedPapers + "/" + paperList.length}}</div>
                   </template>
                 </q-field>
                 <q-field stack-label borderless label-color="primary" label='DOI:'>
@@ -635,6 +635,8 @@ export default {
           message: message
         })
       },
+      numAnnotatedPapers: ref(0),
+      indexMap: ref([]),
       showSessionNameEdit: ref(false),
       sessionName: ref(null),
       showGuidelines: ref(false),
@@ -840,15 +842,16 @@ export default {
         // this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
         // console.log('saliency_map')
         // console.log(this.editable_predictions[0][1].saliency_map)
+        this.loadGpt2 = false
         if (this.editable_predictions.length > 0) {
           this.highlighted_abstract = this.editable_predictions[0][1].saliency_map
           this.visualize(0, 1)
         }
-        this.loadGpt2 = false
       }).catch((error) => {
         console.log('risposta da gpu non è andata')
         error.message
         // this.activateNoGpuMode()
+        
       })
     },
     visualize (instanceIndex, predictionIndex) {
@@ -1030,6 +1033,11 @@ export default {
       // console.log(this.selected)
       // this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
       // console.log('anche qua ci arrivo')
+      this.numAnnotatedPapers = 0
+      for (const paper of this.paperList){
+        if (paper.annotated) this.numAnnotatedPapers +=1
+      }
+
       this.predictionIndex = 'no_index'
       this.instanceIndex = 0
       this.editable_predictions = []
