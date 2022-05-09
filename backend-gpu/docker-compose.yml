@@ -4,8 +4,8 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: muteffstage-backend-gpu:latest
-    container_name: muteffstage-backend-gpu
+    image: coveffect-backend-gpu:latest
+    container_name: coveffect-backend-gpu
     volumes:
       - ./:/workspace/
     command: sh -c "flask run -p 5003 --host=0.0.0.0"

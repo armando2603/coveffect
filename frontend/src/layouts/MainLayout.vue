@@ -4,7 +4,7 @@
     <q-header elevated>
       <q-toolbar>
         <q-toolbar-title style="text-align:center">
-          MutEffStage
+          CovEffect
         </q-toolbar-title>
       </q-toolbar>
     </q-header>

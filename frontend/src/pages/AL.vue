@@ -141,7 +141,7 @@
                   label="Save Session"
                   no-caps
                   color="primary"
-                  @click="saveSession"
+                  @click="savingSession = true; showSessionNameEdit = true"
                 />
               </div>
           </div>
@@ -412,7 +412,7 @@
             </q-card-section>
             <q-card-section>
               <div>
-                Please insert a session name before save annotations
+                Please insert a session name before save annotations or session
               </div>
             </q-card-section>
             <q-card-section>
@@ -420,9 +420,14 @@
                 <q-input outlined placeholder="Insert Session Name"  bottom-slots v-model="sessionName" stack-label/>
               </div>
             </q-card-section>
-            <q-card-section class="row justify-evenly">
+            <q-card-section v-if='!savingSession' class="row justify-evenly">
               <div>
                 <q-btn rounded color="primary" no-caps label="Insert Session Name" @click="sessionName!== null ? checkSaveAndTrain() : showNotif('Please insert a Session Name')"/>
+              </div>
+            </q-card-section>
+            <q-card-section v-if='savingSession' class="row justify-evenly">
+              <div>
+                <q-btn rounded color="primary" no-caps label="Insert Session Name" @click="sessionName!== null ? saveSession() : showNotif('Please insert a Session Name')"/>
               </div>
             </q-card-section>
           </q-card>
@@ -635,6 +640,7 @@ export default {
           message: message
         })
       },
+      savingSession: ref(true),
       numAnnotatedPapers: ref(0),
       indexMap: ref([]),
       showSessionNameEdit: ref(false),
@@ -1262,6 +1268,8 @@ export default {
       this.showSaveAndTrain = true
     },
     saveSession () {
+      this.showSessionNameEdit = false
+      this.savingSession = false
       const session = {
         annotatedPapers: this.fixedPapers,
         paperList: this.paperList,

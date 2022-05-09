@@ -146,8 +146,8 @@ module.exports = configure(function (ctx) {
       },
 
       manifest: {
-        name: `muteffstage`,
-        short_name: `muteffstage`,
+        name: `CovEffect`,
+        short_name: `CovEffect`,
         description: `virus mutation effects extraction`,
         display: 'standalone',
         orientation: 'portrait',
