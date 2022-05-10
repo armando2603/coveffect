@@ -18,8 +18,8 @@ def similar_by_cord(cord_uid):
     # Get the complete description for each similar paper
     results = []
     
-    for paper in similar_papers[1:]:    # Exclude the starting paper
-        results.append(Metadata.query.filter(Metadata.annoy_id == paper).first())
+    # Exclude the starting paper
+    results = Metadata.query.filter(Metadata.annoy_id.in_(similar_papers[1:])).all()
     results = [md.serialize() for md in results]
     return results
 
@@ -32,7 +32,7 @@ def similar_by_doi(doi):
     # Get the complete description for each similar paper
     results = []
     
-    for paper in similar_papers[1:]:    # Exclude the starting paper
-        results.append(Metadata.query.filter(Metadata.annoy_id == paper).first())
+    # Exclude the starting paper
+    results = Metadata.query.filter(Metadata.annoy_id.in_(similar_papers[1:])).all()
     results = [md.serialize() for md in results]
     return results
