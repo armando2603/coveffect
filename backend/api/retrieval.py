@@ -23,7 +23,7 @@ mparser.add_plugin(OperatorsPlugin())
 def retrieve(_query):
     query = mparser.parse(str(_query))
     with INDEX.searcher() as s:
-        results = s.search(query)
+        results = s.search(query, limit=100)
         results = [elem['cord_uid'] for elem in results]
         return results
 
