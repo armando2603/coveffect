@@ -277,44 +277,6 @@
                     <div class="row">
                       <div class="column justify-evenly">{{instance_index + 1 + ": "}}</div>
                       <div ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance"  :key="prediction">
-                        <!-- <div class="row no-wrap" v-if="prediction.attribute === 'mutation_name'"> -->
-                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="visualize(instance_index, prediction_index)">  
-                            <q-field
-                            ref="editable"
-                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
-                            label-color="grey-10"
-                            color='indigo-8'
-                            stack-label
-                            outlined
-                            dense
-                            :bg-color='prediction.fixed && prediction.value.split("_")[0] === "" ? "grey-3" : getOutputColor(prediction)'
-                            :label="'Protein' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
-                              <template v-slot:control>
-                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
-                                  {{prediction.value.split('_')[0] === "" ? 'Insert Value' : prediction.value.split('_')[0]}}
-                                </div>
-                              </template>
-                            </q-field>
-                          </div> -->
-                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = false; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_').slice(1).join('') === '' ? 'Insert Value': prediction.value.split('_').slice(1).join('') ">
-                            <q-field
-                            ref="editable"
-                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && !isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
-                            label-color="grey-10"
-                            color='indigo-8'
-                            stack-label
-                            outlined
-                            dense
-                            :bg-color='prediction.fixed && prediction.value.split("_").slice(1).join("_") === "" ? "grey-3" : getOutputColor(prediction)'
-                            :label="'Mutation' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
-                              <template v-slot:control>
-                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
-                                  {{prediction.value.split('_').slice(1).join('_') !== "" ? prediction.value.split('_').slice(1).join('_') : 'Insert Value'}}
-                                </div>
-                              </template>
-                            </q-field>
-                          </div> -->
-                        <!-- </div> -->
                         <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 120px;height: auto">
                         <q-field
                         ref="editable"
@@ -331,13 +293,6 @@
                               {{prediction.value}}
                             </div>
                           </template>
-                          <!-- <template class='' v-slot:label>
-                            <div class="q-pt-sm row items-start" style='white-space: normal'>
-                              <span>
-                                {{output.field + ' [' + (correctionTable? correctionTable[index].confidence: output.confidence) * 100 + '%]'}}
-                              </span>
-                            </div>
-                          </template> -->
                         </q-field>
                         </div>
                       </div>
@@ -349,51 +304,6 @@
                   <div class="q-pa-sm row justify-evenly">
                     <q-btn rounded dense class="q-pa-sm" icon="add" color="primary" @click="addInstance"/>
                   </div>
-                  <!-- <q-dialog v-model="showAddInstance">
-                    <q-card class="" style="min-width: 50%; height: 30%">
-                      <q-section class="row justify-between q-pa-sm">
-                        <div class="col-11 text-h5 text-primary row justify-evenly">Add a New Tuple</div>
-                        <div class="col-1 justify-end row">
-                          <q-btn class='' color="primary" icon="close" flat round dense v-close-popup />
-                        </div>
-                      </q-section>
-                      <q-section>
-                        <q-form
-                          @submit="onSubmit"
-                          @reset="onReset"
-                          class="q-gutter-md"
-                        >
-                          <q-input
-                            filled
-                            v-model="name"
-                            label="Your name *"
-                            hint="Name and surname"
-                            lazy-rules
-                            :rules="[ val => val && val.length > 0 || 'Please type something']"
-                          />
-
-                          <q-input
-                            filled
-                            type="number"
-                            v-model="age"
-                            label="Your age *"
-                            lazy-rules
-                            :rules="[
-                              val => val !== null && val !== '' || 'Please type your age',
-                              val => val > 0 && val < 100 || 'Please type a real age'
-                            ]"
-                          />
-
-                          <q-toggle v-model="accept" label="I accept the license and terms" />
-
-                          <div>
-                            <q-btn label="Submit" type="submit" color="primary"/>
-                            <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
-                          </div>
-                        </q-form>
-                      </q-section>
-                    </q-card>
-                  </q-dialog> -->
                 </div>    
               </q-card-section>
               <q-card-section class="row q-pb-md justify-evenly">
@@ -640,7 +550,7 @@ export default {
           message: message
         })
       },
-      savingSession: ref(true),
+      savingSession: ref(false),
       numAnnotatedPapers: ref(0),
       indexMap: ref([]),
       showSessionNameEdit: ref(false),
@@ -1250,6 +1160,10 @@ export default {
       )
     },
     removeInstance (instance_index) {
+      if (this.instanceIndex === this.editable_predictions.length - 1) {
+        this.instanceIndex = this.editable_predictions.length - 2
+      }
+
       this.editable_predictions.splice(instance_index, 1)
       if (this.editable_predictions.length === 0) {
         this.predictionIndex = 'no_index'
