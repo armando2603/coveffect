@@ -22,3 +22,14 @@ services:
         command: sh -c "flask run -p 5003 --host=0.0.0.0"
         ports:
             - 61113:5003
+    database:
+        image: mariadb:latest
+        volumes:
+            - ./database/data/mysql/:/var/lib/mysql/
+        environment:
+            - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
+        secrets:
+            - db_root_password
+secrets:
+    db_root_password:
+        file: ./database/secrets/db_root_password.txt
