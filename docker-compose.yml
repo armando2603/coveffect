@@ -10,7 +10,7 @@ services:
             - ./frontend/:/usr/src/app/
         container_name: coveffect-frontend
         ports:
-            - 61111:8080
+            - 8082:8080
     backend:
         build:
             context: ./backend/
