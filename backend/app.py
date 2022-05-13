@@ -3,7 +3,6 @@ from api.papers import get_paper
 from api.retrieval import search as _search
 from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS, cross_origin
 from time import time
 from os import path
