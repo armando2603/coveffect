@@ -406,13 +406,13 @@
                     In this example the two mutation have to be interpreted as ONE group that has one effect<br>
                     <span class="text-bold">Abstract text: </span>The joint presence of N501Y and A222V leads to higher transmissibility<br>
                     <span class="text-bold">Rule: </span>List the mutations separated by "+"<br>
-                    <span class="text-bold">Annotation: </span>"Spike_N501Y + Spike_A222V"<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y+Spike_A222V"<br>
                     <br>
                     <div class="text-primary">Multiple Single Mutation with same effect-level:</div>
                     If several single mutation have the same effect-level is possible to annotate them as follow<br>
                     <span class="text-bold">Abstract text: </span>Mutations N501Y, A222V and K417N lead to an increase of the transmissibility of the virus <br>
                     <span class="text-bold">Rule: </span>List mutations separated by ","<br>
-                    <span class="text-bold">Annotation: </span>"Spike_N501Y, Spike_A222V, Spike_K417N"<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y,Spike_A222V,Spike_K417N"<br>
 
                   </div>
                 </q-card-section>
@@ -569,9 +569,9 @@ export default {
       currentPaper: ref(0),
       showList: ref(false),
       attributeLabels: ref({
-        mutation_type: 'Mutation Type',
+        mutation_type: 'Entity Type',
         protein: 'Protein',
-        mutation_name: 'Mutation',
+        mutation_name: 'Mutation(s)/Variant',
         effect: 'Effect',
         level: 'Level'
       }),
@@ -720,6 +720,9 @@ export default {
         this.NoGpuVisualization()
         return
       }
+      this.predictionIndex = 'no_index'
+      this.instanceIndex = 0
+      this.editable_predictions = []
       apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
@@ -1190,7 +1193,7 @@ export default {
         sessionName: this.sessionName
       }
       exportFile(
-        'session.json',
+        'session' + this.sessionName + '.json',
         JSON.stringify(session),
         'text/json'
       )
