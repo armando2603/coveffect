@@ -3,6 +3,7 @@ from api.papers import get_paper
 from api.retrieval import search as _search
 from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS, cross_origin
 from time import time
 from os import path
@@ -82,6 +83,7 @@ def mutation_values():
 
 @app.route("/search", methods=['POST'])
 def search():
+    session = db_session() # New session instance
     query = request.get_json()['query']
     print(query)
     results = _search(query)
@@ -89,6 +91,7 @@ def search():
 
 @app.route("/similar", methods=['POST'])
 def similar():
+    session = db_session # New session instance
     by = request.get_json()['by']
     by = by.lower()
     id = request.get_json()['id']
