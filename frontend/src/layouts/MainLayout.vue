@@ -6,6 +6,7 @@
         <q-toolbar-title style="text-align:center">
           CovEffect
         </q-toolbar-title>
+        <q-btn flat dense to='/about' label='about' />
       </q-toolbar>
     </q-header>
 
