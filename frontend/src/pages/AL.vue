@@ -277,7 +277,7 @@
                     <div class="row">
                       <div class="column justify-evenly">{{instance_index + 1 + ": "}}</div>
                       <div ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance"  :key="prediction">
-                        <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 120px;height: auto">
+                        <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 135px;height: auto">
                         <q-field
                         ref="editable"
                         :class="predictionIndex === prediction_index && instanceIndex === instance_index ? 'output-field q-field--highlighted': 'output-field'"
@@ -964,8 +964,13 @@ export default {
       const maxStatus = this.getSampleWithMaxWarns()
       if (maxStatus.index !== null) {
         this.selected = [ this.paperList[maxStatus.index] ]
+        this.currentPaper = maxStatus.index
       }
-      this.currentPaper = maxStatus.index
+      else {
+        this.showNotif('All the papers are annotated', 'orange-5')
+        this.currentPaper = 0
+      }
+      
       // this.currentPaper = 0
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
@@ -974,7 +979,7 @@ export default {
       let max = -1
       let maxId = null
       for (const [index, row] of this.paperList.entries()) {
-        if (this.count_warns(row) > max) {
+        if (this.count_warns(row) > max && !row.annotated) {
           max = this.count_warns(row)
           maxId = index
         }
@@ -1059,6 +1064,7 @@ export default {
       // for (const output of this.editable_predictions) {
       //   outputs.push({ attribute: output.attribute, value: output.value })
       // }
+      if (this.sessionName !== 'notrain') {
       apiGPU.post(
         '/save_and_train',
         {
@@ -1132,6 +1138,40 @@ export default {
         console.log(error.message)
         this.loadingRetraining = false
       })
+
+      } else {
+        this.loadingRetraining = false
+        this.loadingRegenerating = true
+        const inputList = []
+        for (const row of this.paperList) {
+          inputList.push(row.abstract)
+        }
+        apiGPU.post(
+          '/generate_table',
+          { output_attributes: this.predictionAttributes, inputs: inputList }
+        ).then((response) => {
+          const extracted_values_list = response.data
+          console.log('extracted values of paper list')
+          console.log(extracted_values_list)
+
+          for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            // if (this.paperList[index].annotated === false){
+            //   this.paperList[index]['extracted_values'] = extracted_values
+            // }
+            this.paperList[index]['extracted_values'] = extracted_values
+            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          }
+
+
+
+          console.log('count warns works')
+          this.loadingRegenerating = false
+          this.resetPage()
+          this.showNotif('Your annotations have been saved', 'green-5', '')
+          this.showSaveAndTrain = false
+        })
+
+      }
 
       // seleziono paper subito dopo
       // this.selected = [this.paperList[this.selected[0].index + 1]]
