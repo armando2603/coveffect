@@ -18,7 +18,11 @@
           </a><br>
           <a class="text-h7" href='mailto:giuseppe.serna@polimi.it'>giuseppe.serna@polimi.it</a><br>
           <a class="text-h7" href='mailto:francesco1.invernici@mail.polimi.it'>francesco1.invernici@mail.polimi.it</a></p>
-
+          <p><a class='text-grey-9 text-h5'>In Collaboration with </a><br>
+          <a>
+            Ruba Al Khalaf
+          </a><br>
+          <a class="text-h7" href='mailto:ruba.al@polimi.it'>ruba.al@polimi.it</a></p>
           <p><a class='text-grey-9 text-h5'>Supervised By</a><br>
           <a>
             Prof. Stefano Ceri and Anna Bernasconi
