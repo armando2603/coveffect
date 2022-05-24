@@ -199,7 +199,7 @@
             </div>
             <div v-if='!loadGpt2' class="scroll overflow-auto">
               <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
-                <mark v-for="element in highlighted_abstract" :key="element" :class="element.color">
+                <mark v-for="element in highlighted_abstract" :key="element" :class="predictionIndex === 2 ? (parseInt(element.color.split('-')[2]) < 3 ? 'bg-white' : element.color) : element.color">
                   {{ element.text }}
                 </mark>
             </div>
@@ -970,7 +970,7 @@ export default {
         this.showNotif('All the papers are annotated', 'orange-5')
         this.currentPaper = 0
       }
-      
+
       // this.currentPaper = 0
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
