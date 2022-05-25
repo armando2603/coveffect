@@ -387,6 +387,34 @@
             <div class="row justify-evenly" v-if="this.output_attributes[this.predictionIndex] === 'mutation_name'">
               <q-btn rounded color="primary" label="Annotation Guidelines" no-caps @click="showGuidelines=true" />
             </div>
+            <div class="row justify-evenly" v-if="this.output_attributes[this.predictionIndex] === 'effect'">
+              <q-btn rounded color="primary" label="Add Effect" @click="showAddEffect=true" no-caps />
+            </div>
+            <q-dialog v-model="showAddEffect">
+              <q-card style="width: 300px">
+                <q-card-section class="row justify-between">
+                  <div class="text-h5 text-primary">Add New Value</div>
+                  <div class="col-1 justify-end row">
+                    <q-btn class='' icon="close" flat round dense v-close-popup />
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div>
+                    Insert a new effect
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div>
+                    <q-input outlined placeholder="Insert Effect Name"  bottom-slots v-model="newEffectName" stack-label/>
+                  </div>
+                </q-card-section>
+                <q-card-section class="row justify-evenly">
+                  <div>
+                    <q-btn rounded color="primary" no-caps label="Add Effect" @click="saveEffect()"/>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </q-dialog>
             <q-dialog v-model="showGuidelines">
               <q-card style="max-width: 70%">
                 <q-card-section class="row justify-between">
@@ -550,6 +578,8 @@ export default {
           message: message
         })
       },
+      showAddEffect: ref(false),
+      newEffectName: ref(null),
       savingSession: ref(false),
       numAnnotatedPapers: ref(0),
       indexMap: ref([]),
@@ -1245,39 +1275,42 @@ export default {
         // console.log(e)
         const sessionJSON = JSON.parse(reader.result)
         // console.log(sessionJSON)
-        for (const newRow of sessionJSON.annotatedPapers) {
-          let notExist = true
-          for (const oldRow of this.fixedPapers) {
-            if (newRow.doi === oldRow.doi) {
-              notExist = false
-              break
-            }
-          }
-          if (notExist) {
-            this.fixedPapers.push(newRow)
-          }
-        }
+        this.fixedPapers = sessionJSON.annotatedPapers
+        // for (const newRow of sessionJSON.annotatedPapers) {
+        //   let notExist = true
+        //   for (const oldRow of this.fixedPapers) {
+        //     if (newRow.doi === oldRow.doi) {
+        //       notExist = false
+        //       break
+        //     }
+        //   }
+        //   if (notExist) {
+        //     this.fixedPapers.push(newRow)
+        //   }
+        // }
 
         this.sessionName = sessionJSON.sessionName
+        this.paperList = sessionJSON.paperList
 
-        for (const newRow of sessionJSON.paperList) {
-          let notExist = true
-          for (const oldRow of this.paperList) {
-            if (newRow.doi === oldRow.doi) {
-              notExist = false
-              break
-            }
-          }
-          if (notExist) {
-            this.paperList.push(newRow)
-          }
-        }
-        this.generateIndex(this.fixedPapers)
-        this.generateIndex(this.paperList)
+        // for (const newRow of sessionJSON.paperList) {
+        //   let notExist = true
+        //   for (const oldRow of this.paperList) {
+        //     if (newRow.doi === oldRow.doi) {
+        //       notExist = false
+        //       break
+        //     }
+        //   }
+        //   if (notExist) {
+        //     this.paperList.push(newRow)
+        //   }
+        // }
+        // this.generateIndex(this.fixedPapers)
+        // this.generateIndex(this.paperList)
         // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
         // this.paperList = this.paperList.concat(sessionJSON.PaperList)
 
         this.generateTable()
+        this.resetPage()
         // reader.result
         // this.fileGEO = null
       }
@@ -1317,6 +1350,12 @@ export default {
       '/mutationValues'
     ).then( (response) => {
       this.stringOptions.mutation_name = response.data
+      // console.log(response.data)
+    }).catch( (error) => {error.message})
+    api.get(
+      '/effectValues'
+    ).then( (response) => {
+      this.stringOptions.effect = response.data
       // console.log(response.data)
     }).catch( (error) => {error.message})
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)

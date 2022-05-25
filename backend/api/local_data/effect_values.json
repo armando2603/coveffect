@@ -1,0 +1,22 @@
+[
+    "infectivity",
+    "viral_transmission",
+    "viral_virulence",
+    "disease_severity",
+    "risk_of_hospitalization",
+    "risk_of_reinfection",
+    "fatality_rate",
+    "complication_with_other_diseases",
+    "sensitivity_to_mAbs",
+    "sensitivity_to_convalescent_sera",
+    "sensitivity_to_vaccine_sera",
+    "protein_flexibilty",
+    "protein_stability",
+    "intraviral_protein_protein_interaction",
+    "binding_to_host_receptor",
+    "binding_to_Abs",
+    "viral_load",
+    "effectiveness_of_available_diagnostics",
+    "effectiveness_of_available_vaccines",
+    "effectiveness_of_available_antiviral_drugs"
+  ]

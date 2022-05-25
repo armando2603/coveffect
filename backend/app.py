@@ -80,6 +80,22 @@ def mutation_values():
         else:
             return jsonify([])
 
+@app.route("/effectValues", methods=['GET'])
+def effect_values():
+    if request.method == 'GET':
+        if path.isfile('api/local_data/effect_values.json'):
+            with open('api/local_data/effect_values.json') as f:
+                return jsonify(json.load(f))
+        else:
+            return jsonify([])
+    if request.method == 'POST':
+        effect = request.get_json()['effect']
+        effect_list = []
+        if path.isfile('api/local_data/effect_values.json'):
+            with open('api/local_data/effect_values.json') as f:
+                effect_list = json.load(f)
+        effect_list.append(effect)
+        return jsonify(effect_list)
 @app.route("/search", methods=['POST'])
 def search():
     session = db_session() # New session instance

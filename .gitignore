@@ -3,6 +3,7 @@ __pycache__/
 venv/
 *.json
 !mutation_values.json
+!effect_values.json
 # Frontend gitignore
 .vscode
 .DS_Store
