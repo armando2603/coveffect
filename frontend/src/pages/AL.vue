@@ -1342,6 +1342,15 @@ export default {
     removePaper () {
       this.paperList.splice(this.currentPaper, 1)
       this.extraction(this.currentPaper)
+    },
+    saveEffect () {
+       api.post(
+      '/effectValues',
+      { effect: this.newEffectName }
+    ).then( (response) => {
+      this.stringOptions.effect = response.data
+      this.showAddEffect = false
+    }).catch( (error) => {error.message})
     }
   },
   created () {

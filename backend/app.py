@@ -94,7 +94,9 @@ def effect_values():
         if path.isfile('api/local_data/effect_values.json'):
             with open('api/local_data/effect_values.json') as f:
                 effect_list = json.load(f)
-        effect_list.append(effect)
+            effect_list.append(effect)
+            with open('api/local_data/effect_papers.json', 'w') as f:
+                json.dump(effect_list, f)
         return jsonify(effect_list)
 @app.route("/search", methods=['POST'])
 def search():
