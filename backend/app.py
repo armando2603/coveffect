@@ -80,7 +80,7 @@ def mutation_values():
         else:
             return jsonify([])
 
-@app.route("/effectValues", methods=['GET'])
+@app.route("/effectValues", methods=['GET', 'POST'])
 def effect_values():
     if request.method == 'GET':
         if path.isfile('api/local_data/effect_values.json'):
@@ -95,7 +95,7 @@ def effect_values():
             with open('api/local_data/effect_values.json') as f:
                 effect_list = json.load(f)
             effect_list.append(effect)
-            with open('api/local_data/effect_papers.json', 'w') as f:
+            with open('api/local_data/effect_values.json', 'w') as f:
                 json.dump(effect_list, f)
         return jsonify(effect_list)
 @app.route("/search", methods=['POST'])
