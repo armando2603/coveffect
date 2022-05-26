@@ -82,7 +82,7 @@ import { api } from 'boot/axios';
 const alertTopics = {
   paper_not_found: {
     title: 'Abstract Not Found',
-    body: 'Check the entered DOI'
+    body: 'The abstract is not available or the DOI format is not correct'
   }
 }
 
@@ -149,7 +149,7 @@ export default {
         '/papers',
         { doi: this.DOIText }
       ).then( (response) => {
-        if (response.data['found'] == true) {
+        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null) {
           let row = response.data['metadata']
           row.keep = true
           row['similar_to'] = ''
