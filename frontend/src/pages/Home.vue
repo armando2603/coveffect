@@ -167,6 +167,7 @@ export default {
         else{
           this.alert = true
           this.alertContent = this.alertTopics.paper_not_found
+          this.loadDoi = false
         }
       }).catch( (error) => {
         error.message
