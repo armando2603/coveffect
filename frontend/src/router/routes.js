@@ -39,7 +39,7 @@ const routes = [
     path: '/about',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', name: 'annotations', component: () => import('pages/About.vue') }
+      { path: '', name: 'about', component: () => import('pages/About.vue') }
     ]
   },
 
