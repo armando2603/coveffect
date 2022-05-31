@@ -80,8 +80,27 @@ def mutation_values():
         else:
             return jsonify([])
 
+@app.route("/effectValues", methods=['GET', 'POST'])
+def effect_values():
+    if request.method == 'GET':
+        if path.isfile('api/local_data/effect_values.json'):
+            with open('api/local_data/effect_values.json') as f:
+                return jsonify(json.load(f))
+        else:
+            return jsonify([])
+    if request.method == 'POST':
+        effect = request.get_json()['effect']
+        effect_list = []
+        if path.isfile('api/local_data/effect_values.json'):
+            with open('api/local_data/effect_values.json') as f:
+                effect_list = json.load(f)
+            effect_list.append(effect)
+            with open('api/local_data/effect_values.json', 'w') as f:
+                json.dump(effect_list, f)
+        return jsonify(effect_list)
 @app.route("/search", methods=['POST'])
 def search():
+    session = db_session() # New session instance
     query = request.get_json()['query']
     print(query)
     results = _search(query)
@@ -89,6 +108,7 @@ def search():
 
 @app.route("/similar", methods=['POST'])
 def similar():
+    session = db_session # New session instance
     by = request.get_json()['by']
     by = by.lower()
     id = request.get_json()['id']

@@ -13,8 +13,7 @@ SCHEMA = Schema(
     doi = ID,
     title = TEXT(analyzer=ANALYZER),
     abstract = TEXT(analyzer=ANALYZER),
-    authors = TEXT,
-    lemmatized = TEXT(analyzer=ANALYZER)
+    authors = TEXT
 )
 
 mparser = MultifieldParser(["title","abstract"], schema=SCHEMA)
@@ -24,13 +23,13 @@ mparser.add_plugin(OperatorsPlugin())
 def retrieve(_query):
     query = mparser.parse(str(_query))
     with INDEX.searcher() as s:
-        results = s.search(query)
+        results = s.search(query, limit=100)
         results = [elem['cord_uid'] for elem in results]
         return results
 
 def search(_query):
     uids = retrieve(_query)
-    results = [Metadata.query.filter(Metadata.cord_uid == uid).first() for uid in uids]
+    results = Metadata.query.filter(Metadata.cord_uid.in_(uids)).all()
     results = [md.serialize() for md in results]
     return results
 

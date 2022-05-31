@@ -1,24 +1,35 @@
 version: '3.1'
 services:
     frontend:
-        image: muteffstage-frontend:latest
+        image: coveffect-frontend:latest
         build:
             context: ./frontend/
             dockerfile: Dockerfile
         command: sh -c "npm install && quasar dev"
         volumes:
             - ./frontend/:/usr/src/app/
-        container_name: muteffstage-frontend
+        container_name: coveffect-frontend
         ports:
-            - 61111:8080
+            - 8082:8080
     backend:
         build:
             context: ./backend/
             dockerfile: Dockerfile
-        image: muteffstage-backend:latest
-        container_name: muteffstage-backend
+        image: coveffect-backend:latest
+        container_name: coveffect-backend
         volumes:
             - ./backend/:/workspace/
         command: sh -c "flask run -p 5003 --host=0.0.0.0"
         ports:
             - 61113:5003
+    database:
+        image: mariadb:latest
+        volumes:
+            - ./database/data/mysql/:/var/lib/mysql/
+        environment:
+            - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
+        secrets:
+            - db_root_password
+secrets:
+    db_root_password:
+        file: ./database/secrets/db_root_password.txt

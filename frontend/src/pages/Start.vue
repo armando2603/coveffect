@@ -407,6 +407,7 @@ export default defineComponent({
             }).then((response) => {
               if (response.data['found'] == true) {
                 similar['numCitedBy'] = response.data['metadata']['numCitedBy']
+                similar['annotated'] = false
                 similar['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
                 this.similarPapers.push(similar)
                 this.generateIndex(this.similarPapers)
@@ -481,7 +482,9 @@ export default defineComponent({
     // console.log(this.previousPaperList)
     // console.log(this.fixedPapers)
     // console.log(this.paperList)
-    for (let row of this.paperList) {
+    this.rows = this.paperList
+    this.generateIndex(this.rows)
+    for (let [index, row] of this.paperList.entries()) {
       row['similar_to'] = ''
       row['journal'] = row.journal === '' ? 'preprint' : row.journal
       api.post('/papers', {
@@ -489,10 +492,10 @@ export default defineComponent({
       }).then((response) => {
         if (response.data['found'] == true) {
           row['numCitedBy'] = response.data['metadata']['numCitedBy']
+          row['annotated'] = false
           row['year'] = response.data['metadata']['year']
           // row['journal'] = response.data['metadata']['journal']
-          this.rows.push(row)
-          this.generateIndex(this.rows)
+          this.rows[index] = row
         }
       }).catch(error => (error.message))
     }

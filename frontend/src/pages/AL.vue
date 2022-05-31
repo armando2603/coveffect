@@ -141,7 +141,7 @@
                   label="Save Session"
                   no-caps
                   color="primary"
-                  @click="saveSession"
+                  @click="savingSession = true; showSessionNameEdit = true"
                 />
               </div>
           </div>
@@ -199,7 +199,7 @@
             </div>
             <div v-if='!loadGpt2' class="scroll overflow-auto">
               <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
-                <mark v-for="element in highlighted_abstract" :key="element" :class="element.color">
+                <mark v-for="element in highlighted_abstract" :key="element" :class="predictionIndex === 2 ? (parseInt(element.color.split('-')[2]) < 3 ? 'bg-white' : element.color) : element.color">
                   {{ element.text }}
                 </mark>
             </div>
@@ -212,20 +212,20 @@
             <q-card-section class="row justify-evenly">
               <div class="text-h5">Paper Info</div>
             </q-card-section>
-            <div v-if="paperList.length > 1" class="row justify-between q-px-md">
-              <div class="no-wrap row">
+            <div v-if="paperList.length > 1" class="row justify-evenly q-px-md">
+              <!-- <div class="no-wrap row">
                 <div class="q-pr-sm">
                 <q-btn icon="arrow_left" rounded dense color="primary" @click="if (currentPaper > 0) currentPaper -= 1; extraction(currentPaper)" />
                 </div>
                 <q-btn icon="arrow_right" rounded dense color="primary" @click="if (currentPaper < (paperList.length -1)) currentPaper += 1; extraction(currentPaper)" />
-              </div>
+              </div> -->
               <q-btn label="Remove Paper" no-caps rounded color="red-4" dense @click="removePaper" />
             </div>
             <div class="column justify-evenly" style="overflow: auto; flex-grow: 1;">
               <q-card-section style="overflow: auto; flex-grow: 1;">
-                <q-field stack-label borderless label-color="primary" label='Paper:'>
+                <q-field stack-label borderless label-color="primary" label='Annotated Papers:'>
                   <template v-slot:control>
-                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{currentPaper + 1 + "/" + paperList.length}}</div>
+                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotatedPapers + "/" + paperList.length}}</div>
                   </template>
                 </q-field>
                 <q-field stack-label borderless label-color="primary" label='DOI:'>
@@ -277,45 +277,7 @@
                     <div class="row">
                       <div class="column justify-evenly">{{instance_index + 1 + ": "}}</div>
                       <div ref="editables" class='' v-for="(prediction, prediction_index) in predictions_instance"  :key="prediction">
-                        <!-- <div class="row no-wrap" v-if="prediction.attribute === 'mutation_name'"> -->
-                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="visualize(instance_index, prediction_index)">  
-                            <q-field
-                            ref="editable"
-                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
-                            label-color="grey-10"
-                            color='indigo-8'
-                            stack-label
-                            outlined
-                            dense
-                            :bg-color='prediction.fixed && prediction.value.split("_")[0] === "" ? "grey-3" : getOutputColor(prediction)'
-                            :label="'Protein' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
-                              <template v-slot:control>
-                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
-                                  {{prediction.value.split('_')[0] === "" ? 'Insert Value' : prediction.value.split('_')[0]}}
-                                </div>
-                              </template>
-                            </q-field>
-                          </div> -->
-                          <!-- <div class='q-pa-sm' style="width: 120px;height: auto" @click="isProteinAttribute = false; visualize(instance_index, prediction_index); insertedValue = prediction.value.split('_').slice(1).join('') === '' ? 'Insert Value': prediction.value.split('_').slice(1).join('') ">
-                            <q-field
-                            ref="editable"
-                            :class="predictionIndex === prediction_index && instanceIndex === instance_index && !isProteinAttribute ? 'output-field q-field--highlighted': 'output-field'"
-                            label-color="grey-10"
-                            color='indigo-8'
-                            stack-label
-                            outlined
-                            dense
-                            :bg-color='prediction.fixed && prediction.value.split("_").slice(1).join("_") === "" ? "grey-3" : getOutputColor(prediction)'
-                            :label="'Mutation' + ' [' + Math.round(prediction.confidence * 100) + '%]'" >
-                              <template v-slot:control>
-                                <div class="self-center full-width no-outline q-pb-sm q-pt-md text-h13" style="overflow: hidden; min-height: 40px" tabindex="0">
-                                  {{prediction.value.split('_').slice(1).join('_') !== "" ? prediction.value.split('_').slice(1).join('_') : 'Insert Value'}}
-                                </div>
-                              </template>
-                            </q-field>
-                          </div> -->
-                        <!-- </div> -->
-                        <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 120px;height: auto">
+                        <div class='q-pa-sm' @click="visualize(instance_index, prediction_index)" style="width: 135px;height: auto">
                         <q-field
                         ref="editable"
                         :class="predictionIndex === prediction_index && instanceIndex === instance_index ? 'output-field q-field--highlighted': 'output-field'"
@@ -331,13 +293,6 @@
                               {{prediction.value}}
                             </div>
                           </template>
-                          <!-- <template class='' v-slot:label>
-                            <div class="q-pt-sm row items-start" style='white-space: normal'>
-                              <span>
-                                {{output.field + ' [' + (correctionTable? correctionTable[index].confidence: output.confidence) * 100 + '%]'}}
-                              </span>
-                            </div>
-                          </template> -->
                         </q-field>
                         </div>
                       </div>
@@ -349,51 +304,6 @@
                   <div class="q-pa-sm row justify-evenly">
                     <q-btn rounded dense class="q-pa-sm" icon="add" color="primary" @click="addInstance"/>
                   </div>
-                  <!-- <q-dialog v-model="showAddInstance">
-                    <q-card class="" style="min-width: 50%; height: 30%">
-                      <q-section class="row justify-between q-pa-sm">
-                        <div class="col-11 text-h5 text-primary row justify-evenly">Add a New Tuple</div>
-                        <div class="col-1 justify-end row">
-                          <q-btn class='' color="primary" icon="close" flat round dense v-close-popup />
-                        </div>
-                      </q-section>
-                      <q-section>
-                        <q-form
-                          @submit="onSubmit"
-                          @reset="onReset"
-                          class="q-gutter-md"
-                        >
-                          <q-input
-                            filled
-                            v-model="name"
-                            label="Your name *"
-                            hint="Name and surname"
-                            lazy-rules
-                            :rules="[ val => val && val.length > 0 || 'Please type something']"
-                          />
-
-                          <q-input
-                            filled
-                            type="number"
-                            v-model="age"
-                            label="Your age *"
-                            lazy-rules
-                            :rules="[
-                              val => val !== null && val !== '' || 'Please type your age',
-                              val => val > 0 && val < 100 || 'Please type a real age'
-                            ]"
-                          />
-
-                          <q-toggle v-model="accept" label="I accept the license and terms" />
-
-                          <div>
-                            <q-btn label="Submit" type="submit" color="primary"/>
-                            <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
-                          </div>
-                        </q-form>
-                      </q-section>
-                    </q-card>
-                  </q-dialog> -->
                 </div>    
               </q-card-section>
               <q-card-section class="row q-pb-md justify-evenly">
@@ -412,7 +322,7 @@
             </q-card-section>
             <q-card-section>
               <div>
-                Please insert a session name before save annotations
+                Please insert a session name before save annotations or session
               </div>
             </q-card-section>
             <q-card-section>
@@ -420,9 +330,14 @@
                 <q-input outlined placeholder="Insert Session Name"  bottom-slots v-model="sessionName" stack-label/>
               </div>
             </q-card-section>
-            <q-card-section class="row justify-evenly">
+            <q-card-section v-if='!savingSession' class="row justify-evenly">
               <div>
                 <q-btn rounded color="primary" no-caps label="Insert Session Name" @click="sessionName!== null ? checkSaveAndTrain() : showNotif('Please insert a Session Name')"/>
+              </div>
+            </q-card-section>
+            <q-card-section v-if='savingSession' class="row justify-evenly">
+              <div>
+                <q-btn rounded color="primary" no-caps label="Insert Session Name" @click="sessionName!== null ? saveSession() : showNotif('Please insert a Session Name')"/>
               </div>
             </q-card-section>
           </q-card>
@@ -472,6 +387,34 @@
             <div class="row justify-evenly" v-if="this.output_attributes[this.predictionIndex] === 'mutation_name'">
               <q-btn rounded color="primary" label="Annotation Guidelines" no-caps @click="showGuidelines=true" />
             </div>
+            <div class="row justify-evenly" v-if="this.output_attributes[this.predictionIndex] === 'effect'">
+              <q-btn rounded color="primary" label="Add Effect" @click="showAddEffect=true" no-caps />
+            </div>
+            <q-dialog v-model="showAddEffect">
+              <q-card style="width: 300px">
+                <q-card-section class="row justify-between">
+                  <div class="text-h5 text-primary">Add New Value</div>
+                  <div class="col-1 justify-end row">
+                    <q-btn class='' icon="close" flat round dense v-close-popup />
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div>
+                    Insert a new effect
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div>
+                    <q-input outlined placeholder="Insert Effect Name"  bottom-slots v-model="newEffectName" stack-label/>
+                  </div>
+                </q-card-section>
+                <q-card-section class="row justify-evenly">
+                  <div>
+                    <q-btn rounded color="primary" no-caps label="Add Effect" @click="saveEffect()"/>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </q-dialog>
             <q-dialog v-model="showGuidelines">
               <q-card style="max-width: 70%">
                 <q-card-section class="row justify-between">
@@ -491,13 +434,13 @@
                     In this example the two mutation have to be interpreted as ONE group that has one effect<br>
                     <span class="text-bold">Abstract text: </span>The joint presence of N501Y and A222V leads to higher transmissibility<br>
                     <span class="text-bold">Rule: </span>List the mutations separated by "+"<br>
-                    <span class="text-bold">Annotation: </span>"Spike_N501Y + Spike_A222V"<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y+Spike_A222V"<br>
                     <br>
                     <div class="text-primary">Multiple Single Mutation with same effect-level:</div>
                     If several single mutation have the same effect-level is possible to annotate them as follow<br>
                     <span class="text-bold">Abstract text: </span>Mutations N501Y, A222V and K417N lead to an increase of the transmissibility of the virus <br>
                     <span class="text-bold">Rule: </span>List mutations separated by ","<br>
-                    <span class="text-bold">Annotation: </span>"Spike_N501Y, Spike_A222V, Spike_K417N"<br>
+                    <span class="text-bold">Annotation: </span>"Spike_N501Y,Spike_A222V,Spike_K417N"<br>
 
                   </div>
                 </q-card-section>
@@ -635,6 +578,11 @@ export default {
           message: message
         })
       },
+      showAddEffect: ref(false),
+      newEffectName: ref(null),
+      savingSession: ref(false),
+      numAnnotatedPapers: ref(0),
+      indexMap: ref([]),
       showSessionNameEdit: ref(false),
       sessionName: ref(null),
       showGuidelines: ref(false),
@@ -651,9 +599,9 @@ export default {
       currentPaper: ref(0),
       showList: ref(false),
       attributeLabels: ref({
-        mutation_type: 'Mutation Type',
+        mutation_type: 'Entity Type',
         protein: 'Protein',
-        mutation_name: 'Mutation',
+        mutation_name: 'Mutation(s)/Variant',
         effect: 'Effect',
         level: 'Level'
       }),
@@ -739,10 +687,15 @@ export default {
         'effect',
         'level'
       ]),
+      predictionAttributes: ref([
+        { value: 'mutation_name', multiple: true},
+        { value: 'effect', multiple: true},
+        { value: 'level', multiple: false}
+      ]),
       pagination: ref({
         rowsPerPage: 200,
-        sortBy: 'index',
-        descending: false
+        sortBy: 'warns',
+        descending: true
       }),
       columns: [
         { name: 'index', label: '#', field: 'index',required: false, align: 'left' },
@@ -797,30 +750,57 @@ export default {
         this.NoGpuVisualization()
         return
       }
-      apiGPU.post('/extract_attributes',
+      this.predictionIndex = 'no_index'
+      this.instanceIndex = 0
+      this.editable_predictions = []
+      apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
-        output_attributes: this.output_attributes
-      },
-      {
-        timeout: 6000
+        output_attributes: this.predictionAttributes
       }).then( (response) => {
-        this.editable_predictions =  [JSON.parse(JSON.stringify(response.data.outputs))]
+        console.log('risposta positiva da gpu')
+        this.editable_predictions = JSON.parse(JSON.stringify(response.data.outputs))
+        // console.log('editable predicitons :')
+        // console.log(this.editable_predictions)
         for (const [instance_index, instance] of this.editable_predictions.entries()){
           for (const prediction_index in instance) {
             this.editable_predictions[instance_index][prediction_index].fullPaperValue = false
           }
+          let mutationTypeOutput = {
+            value: null,
+            attribute: "mutation_type",
+            confidence: 1,
+            saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }],
+            fullPaperValue: false
+          }
+          if (this.editable_predictions[instance_index][0].value.split('+').length > 1) {
+            mutationTypeOutput.value = 'group'
+          } else if (this.editable_predictions[instance_index][0].value.split('_').length > 1) {
+            mutationTypeOutput.value = 'single'
+          } else {
+            mutationTypeOutput.value = 'variant'
+          }
+          this.editable_predictions[instance_index].splice(0, 0, mutationTypeOutput)
         }
+
+
         // this.predictions.unshift({ attribute: 'mutation type', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'effect', value: "missing", confidence: 0 })
         // this.predictions.push({ attribute: 'level', value: "missing", confidence: 0 })
-        this.saliency_maps = [response.data.saliency_map]
+        // this.saliency_maps = [response.data.saliency_map]
+        // this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
+        // console.log('saliency_map')
+        // console.log(this.editable_predictions[0][1].saliency_map)
         this.loadGpt2 = false
-        this.visualize(0, 0)
+        if (this.editable_predictions.length > 0) {
+          this.highlighted_abstract = this.editable_predictions[0][1].saliency_map
+          this.visualize(0, 1)
+        }
       }).catch((error) => {
-        console.log('error extraction')
+        console.log('risposta da gpu non è andata')
         error.message
         // this.activateNoGpuMode()
+        
       })
     },
     visualize (instanceIndex, predictionIndex) {
@@ -833,7 +813,7 @@ export default {
       this.instanceIndex = instanceIndex
       this.predictionIndex = predictionIndex
       this.insertedValue = this.editable_predictions[instanceIndex][predictionIndex].value
-      if (this.saliency_maps.length > 0) this.highlighted_abstract = this.saliency_maps[instanceIndex][predictionIndex][0]
+      this.highlighted_abstract = this.editable_predictions[instanceIndex][predictionIndex].saliency_map
 
     },
     generateTable () {
@@ -841,20 +821,27 @@ export default {
       for ( const paper of this.paperList) {
         abstract_list.push(paper.abstract)
       }
+      // this.resetPage()\
+
       // this.showNotif('The GPU server is not available, users can only annotate papers')
       apiGPU.post(
-        '/generateTable',
-        { output_attributes: this.output_attributes, inputs: abstract_list },
-        { timeout: 6000 }
+        '/generate_table',
+        { output_attributes: this.predictionAttributes, inputs: abstract_list }
       ).then( (response) => {
         const extracted_values_list = response.data
-        for ( const [index, extracted_values] of extracted_values_list.entries()) {
-          if (this.paperList[index].annotated === false){
-            this.paperList[index]['extracted_values'] = [extracted_values]
-          }
+        console.log('extracted values of paper list')
+        console.log(extracted_values_list)
 
+        for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          // if (this.paperList[index].annotated === false){
+          //   this.paperList[index]['extracted_values'] = extracted_values
+          // }
+          this.paperList[index]['extracted_values'] = extracted_values
           this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
         }
+        // console.log('count warns works')
+        // console.log('paper list')
+        // console.log(this.paperList)
         this.resetPage()
       }).catch( (error) => {
         console.log('error in generatetable')
@@ -882,11 +869,14 @@ export default {
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
     },
     count_warns (row) {
-      if (!Object.keys(row).includes('extracted_values')) return row.index
+      if (!Object.keys(row).includes('extracted_values')) return 0
       var nWarn = 0
       for (const prediction_instance of row.extracted_values) {
-        for (var attribute of this.output_attributes) {
-          if (prediction_instance[attribute].confidence < this.redThreshold) {
+        // console.log('prediction_instance')
+
+        // console.log(prediction_instance)
+        for (const output_attribute of prediction_instance) {
+          if (output_attribute.confidence < this.redThreshold) {
             nWarn += 1
           }
         }
@@ -992,13 +982,26 @@ export default {
       // console.log(this.selected)
       // this.highlighted_abstract = [{ text: this.paperList[this.selected[0].index].abstract, color: 'bg-white' }]
       // console.log('anche qua ci arrivo')
+      this.numAnnotatedPapers = 0
+      for (const paper of this.paperList){
+        if (paper.annotated) this.numAnnotatedPapers +=1
+      }
+
+      this.predictionIndex = 'no_index'
+      this.instanceIndex = 0
       this.editable_predictions = []
       this.feedback_list = []
       const maxStatus = this.getSampleWithMaxWarns()
       if (maxStatus.index !== null) {
         this.selected = [ this.paperList[maxStatus.index] ]
+        this.currentPaper = maxStatus.index
       }
-      this.currentPaper = maxStatus.index
+      else {
+        this.showNotif('All the papers are annotated', 'orange-5')
+        this.currentPaper = 0
+      }
+
+      // this.currentPaper = 0
       this.highlighted_abstract = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       this.extraction(this.currentPaper)
     },
@@ -1006,7 +1009,7 @@ export default {
       let max = -1
       let maxId = null
       for (const [index, row] of this.paperList.entries()) {
-        if (this.count_warns(row) > max) {
+        if (this.count_warns(row) > max && !row.annotated) {
           max = this.count_warns(row)
           maxId = index
         }
@@ -1033,6 +1036,8 @@ export default {
 
           }
         }
+
+
         // console.log(extracted_values)
         this.paperList[this.currentPaper].extracted_values = extracted_values
         this.paperList[this.currentPaper].annotated = true
@@ -1054,18 +1059,47 @@ export default {
         return
       }
       this.loadingRetraining = true
-      const outputs = []
+      let extracted_values = []
+      for (let instance of this.editable_predictions) {
+        // console.log(tmp_instance[1])
+        for (const mutation_name of instance[1].value.split(",")) {
+          let tmp_instance = JSON.parse(JSON.stringify(instance))
+          tmp_instance[1].value = mutation_name.trim()
+          let output_instance = {}
+          for (const [index, attribute] of this.output_attributes.entries()) {
+            output_instance[attribute] = tmp_instance[index]
+          }
+          extracted_values.push(output_instance)
+
+        }
+      }
+
+      this.paperList[this.currentPaper].extracted_values = extracted_values
+      this.paperList[this.currentPaper].annotated = true
+      this.paperList[this.currentPaper].annotationTime = Date()
+      this.paperList[this.currentPaper].annotator = this.sessionName
+      // this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
+      const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+      correctedRow.index = this.fixedPapers.length
+      // console.log(correctedRow)
+      this.fixedPapers.push(correctedRow)
+      // console.log(this.fixedPapers)
+      this.storeFixedPapers()
+
+
+      // console.log(extracted_values)
       // for (const output of this.editable_predictions) {
       //   if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })
       // }
-      for (const output of this.editable_predictions) {
-        outputs.push({ attribute: output.attribute, value: output.value })
-      }
+      // for (const output of this.editable_predictions) {
+      //   outputs.push({ attribute: output.attribute, value: output.value })
+      // }
+      if (this.sessionName !== 'notrain') {
       apiGPU.post(
-        '/saveAndTrain',
+        '/save_and_train',
         {
-          input_text: this.paperList[this.predictionIndex].abstract,
-          outputs: outputs
+          input_text: this.paperList[this.currentPaper].abstract,
+          outputs: extracted_values
         }
       ).then((response) => {
         const inputList = []
@@ -1073,13 +1107,29 @@ export default {
           inputList.push(row.abstract)
         }
         // TODO: aggiungi il sample modificato alla lista dei sample modificati
-
+        
         this.loadingRetraining = false
         this.loadingRegenerating = true
         apiGPU.post(
-          '/generateTable',
-          { output_attributes: this.output_attributes, inputs: inputList }
+          '/generate_table',
+          { output_attributes: this.predictionAttributes, inputs: inputList }
         ).then((response) => {
+          const extracted_values_list = response.data
+          console.log('extracted values of paper list')
+          console.log(extracted_values_list)
+
+          for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            // if (this.paperList[index].annotated === false){
+            //   this.paperList[index]['extracted_values'] = extracted_values
+            // }
+            this.paperList[index]['extracted_values'] = extracted_values
+            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          }
+
+
+
+          console.log('count warns works')
+          this.loadingRegenerating = false
           // this.dataset_json[this.datasetType] = response.data
           // for (const [index, row] of this.paperList.entries()) {
           //   for (const attribute of this.output_attributes) {
@@ -1091,22 +1141,22 @@ export default {
           //       newTable[index].fields[field].fixed = true
           //     }
           //   }
-          //   this.loadingRegenerating = false
           // }
-          const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
-          correctedRow.index = this.fixedPapers.length
-          this.fixedPapers.push(correctedRow)
-          const extracted_values_list = response.data
-          for ( const [index, extracted_values] of extracted_values_list.entries()) {
-            this.paperList[index]['extracted_values'] = extracted_values
-            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
-          }
-          this.paperList.splice(this.currentPaper, 1)
-          for (const [newIndex, row] of this.paperList.entries()) {
-            this.paperList[newIndex].index = newIndex
-          }
-          this.storeFixedPapers()
+          // const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+          // correctedRow.index = this.fixedPapers.length
+          // this.fixedPapers.push(correctedRow)
+          // const extracted_values_list = response.data
+          // for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          //   this.paperList[index]['extracted_values'] = extracted_values
+          //   this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          // }
+          // this.paperList.splice(this.currentPaper, 1)
+          // for (const [newIndex, row] of this.paperList.entries()) {
+          //   this.paperList[newIndex].index = newIndex
+          // }
+          // this.storeFixedPapers()
           this.resetPage()
+          this.showNotif('Your annotations have been saved', 'green-5', '')
           this.showSaveAndTrain = false
         }).catch(error => {
           console.log(error.message)
@@ -1118,6 +1168,41 @@ export default {
         console.log(error.message)
         this.loadingRetraining = false
       })
+
+      } else {
+        this.loadingRetraining = false
+        this.loadingRegenerating = true
+        const inputList = []
+        for (const row of this.paperList) {
+          inputList.push(row.abstract)
+        }
+        apiGPU.post(
+          '/generate_table',
+          { output_attributes: this.predictionAttributes, inputs: inputList }
+        ).then((response) => {
+          const extracted_values_list = response.data
+          console.log('extracted values of paper list')
+          console.log(extracted_values_list)
+
+          for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            // if (this.paperList[index].annotated === false){
+            //   this.paperList[index]['extracted_values'] = extracted_values
+            // }
+            this.paperList[index]['extracted_values'] = extracted_values
+            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          }
+
+
+
+          console.log('count warns works')
+          this.loadingRegenerating = false
+          this.resetPage()
+          this.showNotif('Your annotations have been saved', 'green-5', '')
+          this.showSaveAndTrain = false
+        })
+
+      }
+
       // seleziono paper subito dopo
       // this.selected = [this.paperList[this.selected[0].index + 1]]
       // this.loadSelection()
@@ -1139,15 +1224,19 @@ export default {
     addInstance () {
       this.editable_predictions.push(
         [
-          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
+          { attribute: 'mutation_type', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
           // { attribute: 'protein', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false },
-          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false }
+          { attribute: 'mutation_name', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
+          { attribute: 'effect', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] },
+          { attribute: 'level', value: "Insert Value", confidence: 1, fixed: false, fullPaperValue: false, saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }] }
         ]
       )
     },
     removeInstance (instance_index) {
+      if (this.instanceIndex === this.editable_predictions.length - 1) {
+        this.instanceIndex = this.editable_predictions.length - 2
+      }
+
       this.editable_predictions.splice(instance_index, 1)
       if (this.editable_predictions.length === 0) {
         this.predictionIndex = 'no_index'
@@ -1166,13 +1255,15 @@ export default {
       this.showSaveAndTrain = true
     },
     saveSession () {
+      this.showSessionNameEdit = false
+      this.savingSession = false
       const session = {
         annotatedPapers: this.fixedPapers,
         paperList: this.paperList,
         sessionName: this.sessionName
       }
       exportFile(
-        'session.json',
+        'session' + this.sessionName + '.json',
         JSON.stringify(session),
         'text/json'
       )
@@ -1184,39 +1275,42 @@ export default {
         // console.log(e)
         const sessionJSON = JSON.parse(reader.result)
         // console.log(sessionJSON)
-        for (const newRow of sessionJSON.annotatedPapers) {
-          let notExist = true
-          for (const oldRow of this.fixedPapers) {
-            if (newRow.doi === oldRow.doi) {
-              notExist = false
-              break
-            }
-          }
-          if (notExist) {
-            this.fixedPapers.push(newRow)
-          }
-        }
+        this.fixedPapers = sessionJSON.annotatedPapers
+        // for (const newRow of sessionJSON.annotatedPapers) {
+        //   let notExist = true
+        //   for (const oldRow of this.fixedPapers) {
+        //     if (newRow.doi === oldRow.doi) {
+        //       notExist = false
+        //       break
+        //     }
+        //   }
+        //   if (notExist) {
+        //     this.fixedPapers.push(newRow)
+        //   }
+        // }
 
         this.sessionName = sessionJSON.sessionName
+        this.paperList = sessionJSON.paperList
 
-        for (const newRow of sessionJSON.paperList) {
-          let notExist = true
-          for (const oldRow of this.paperList) {
-            if (newRow.doi === oldRow.doi) {
-              notExist = false
-              break
-            }
-          }
-          if (notExist) {
-            this.paperList.push(newRow)
-          }
-        }
-        this.generateIndex(this.fixedPapers)
-        this.generateIndex(this.paperList)
+        // for (const newRow of sessionJSON.paperList) {
+        //   let notExist = true
+        //   for (const oldRow of this.paperList) {
+        //     if (newRow.doi === oldRow.doi) {
+        //       notExist = false
+        //       break
+        //     }
+        //   }
+        //   if (notExist) {
+        //     this.paperList.push(newRow)
+        //   }
+        // }
+        // this.generateIndex(this.fixedPapers)
+        // this.generateIndex(this.paperList)
         // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
         // this.paperList = this.paperList.concat(sessionJSON.PaperList)
 
         this.generateTable()
+        this.resetPage()
         // reader.result
         // this.fileGEO = null
       }
@@ -1248,6 +1342,15 @@ export default {
     removePaper () {
       this.paperList.splice(this.currentPaper, 1)
       this.extraction(this.currentPaper)
+    },
+    saveEffect () {
+       api.post(
+      '/effectValues',
+      { effect: this.newEffectName }
+    ).then( (response) => {
+      this.stringOptions.effect = response.data
+      this.showAddEffect = false
+    }).catch( (error) => {error.message})
     }
   },
   created () {
@@ -1256,6 +1359,12 @@ export default {
       '/mutationValues'
     ).then( (response) => {
       this.stringOptions.mutation_name = response.data
+      // console.log(response.data)
+    }).catch( (error) => {error.message})
+    api.get(
+      '/effectValues'
+    ).then( (response) => {
+      this.stringOptions.effect = response.data
       // console.log(response.data)
     }).catch( (error) => {error.message})
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
@@ -1272,7 +1381,7 @@ export default {
     // }).catch((error) => (error.message))
     this.sessionName = this.$route.params.sessionName
     this.paperList = JSON.parse(this.$route.params.paperList)
-    console.log(this.paperList)
+    // console.log(this.paperList)
     this.generateTable()
   }
 }

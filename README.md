@@ -1,4 +1,4 @@
-# muteffstage (backend and frontend)
+# coveffect (backend and frontend)
 
 virus mutation effects extraction
 

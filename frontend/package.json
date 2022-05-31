@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.0.1",
   "description": "virus mutation effects extraction",
-  "productName": "muteffstage",
+  "productName": "CovEffect",
   "author": "giuseppe serna",
   "private": true,
   "scripts": {
