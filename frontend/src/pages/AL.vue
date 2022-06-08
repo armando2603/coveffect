@@ -1053,7 +1053,7 @@ export default {
         // console.log(correctedRow)
         this.fixedPapers.push(correctedRow)
         // console.log(this.fixedPapers)
-        this.storeFixedPapers()
+        this.storeFixedPaper(correctedRow)
         this.showSaveAndTrain = false
         this.showNotif('Your annotations have been saved', 'green-5', '')
         return
@@ -1084,7 +1084,7 @@ export default {
       // console.log(correctedRow)
       this.fixedPapers.push(correctedRow)
       // console.log(this.fixedPapers)
-      this.storeFixedPapers()
+      this.storeFixedPaper(correctedRow)
 
 
       // console.log(extracted_values)
@@ -1215,10 +1215,10 @@ export default {
           if (this.loadStatus < 100) this.getLoadStatus()
         }).catch(error => console.log(error))
     },
-    storeFixedPapers () {
+    storeFixedPaper (paper) {
       api.post(
         '/fixedPapers',
-        { fixed_papers: this.fixedPapers }
+        { fixed_papers: [paper] }
       ).catch( (error) => (error.message))
     },
     addInstance () {
