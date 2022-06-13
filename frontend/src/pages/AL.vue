@@ -1162,8 +1162,8 @@ export default {
           console.log(error.message)
           this.showSaveAndTrain = false
         })
-        this.loadStatus = 0
-        this.getLoadStatus()
+        // this.loadStatus = 0
+        // this.getLoadStatus()
       }).catch(error => {
         console.log(error.message)
         this.loadingRetraining = false
