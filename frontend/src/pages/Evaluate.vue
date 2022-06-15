@@ -180,8 +180,8 @@ import { apiGPU } from 'src/boot/axios'
 import { ref } from 'vue'
 
 const columns = [
-  { name: 'doi', label: 'DOI',field: 'doi', required: true, align: 'left'},
-  { name: 'f1', label: 'f1', field: row => row['f1'].toFixed(3), required: true, align: 'left' },
+  { name: 'doi', label: 'DOI',field: 'doi', required: true, sortable: true, align: 'left'},
+  { name: 'f1', label: 'f1', field: row => row['f1'].toFixed(3), required: true, sortable: true, align: 'left' },
   { name: 'targets', label: 'Targets', field: 'targets', required: true, align: 'left' },
   { name: 'predictions', label: 'predictions', field: 'predictions', required: true, align: 'left' },
 
