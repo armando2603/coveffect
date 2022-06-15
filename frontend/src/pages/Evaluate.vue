@@ -14,7 +14,7 @@
         <div class="q-gutter-sm row justify-evenly">
           <div>
             <q-radio v-model="checkpointOptions" :val="new_checkpoints_list" label="New" @update:model-value="(value, evt) => {checkpointName=null}"/>
-            <q-radio v-model="checkpointOptions" :val="history_checkpoints_list" label="History" />
+            <q-radio v-model="checkpointOptions" :val="history_checkpoints_list" label="History" @update:model-value="(value, evt) => {checkpointName=null}"/>
           </div>
         </div>
         <div class="q-pa-md row justify-evenly" >
