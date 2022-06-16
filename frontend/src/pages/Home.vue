@@ -128,7 +128,7 @@ export default {
       ).then((response) => {
         // console.log(response.data[0])
         for (const element of response.data) {
-          if (element.doi !== "" && this.testDois.includes(element.doi) ) {
+          if (element.doi !== "" && !this.testDois.includes(element.doi) ) {
             let row = {}
             for (const attribute of this.attributes) {
               row[attribute] = element[attribute]
@@ -158,7 +158,7 @@ export default {
         '/papers',
         { doi: this.DOIText }
       ).then( (response) => {
-        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null && this.testDois.includes(response.data['metadata']['doi']) ) {
+        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null && !this.testDois.includes(response.data['metadata']['doi']) ) {
           let row = response.data['metadata']
           row.keep = true
           row['similar_to'] = ''
