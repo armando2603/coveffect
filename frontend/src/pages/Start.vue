@@ -60,8 +60,8 @@
         >
           <template v-slot:top>
             <div class="row justify-between" style="width: 100%">
-              <div class="text-h5 text-primary q-pl-md q-pr-md">{{'Results for : "' + $route.params.keyword + '"'}}</div>
-              <div class="col-4 row justify-end">
+              <div class="col-10 text-h5 text-primary q-pl-md q-pr-md">{{'Results for : "' + $route.params.keyword + '"'}}</div>
+              <div class="col-2 row justify-end">
                 <q-btn class='' rounded icon='add' color='primary' @click='showAddPaper=true'/>
                 <!-- <div class='q-pl-sm'>
                   <q-btn rounded v-if='rows.length > 0' icon='remove' color='red-8' @click='removeSelection'/>

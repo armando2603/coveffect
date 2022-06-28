@@ -4,6 +4,7 @@ venv/
 *.json
 !mutation_values.json
 !effect_values.json
+!test_set_dois.json
 # Frontend gitignore
 .vscode
 .DS_Store

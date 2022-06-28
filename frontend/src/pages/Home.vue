@@ -3,15 +3,22 @@
     <div class="col-12 column justify-evenly">
       <div class="row justify-evenly" style="height: 15%">
         <div class="column justify-evenly">
-        <q-btn no-caps label="Load Previous Session" color="primary" @click="this.$refs.filePicker.$el.click()"/>
-        <q-file
-          dense
-          v-model="session"
-          v-show="false"
-          ref="filePicker"
-          accept=".json"
-          @update:model-value="loadSession"
-        />
+          <div class="row justify-evenly">
+            <div class="q-px-sm">
+              <q-btn no-caps label="Load Session" color="primary" @click="this.$refs.filePicker.$el.click()"/>
+            </div>
+            <div class="q-pr-xl q-mr-md">
+              <q-btn no-caps label="Evaluate" color="primary" @click="this.$router.replace({name: 'evaluate', params: {paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList), sessionName: this.sessionName}})"/>
+            </div>
+          </div>
+          <q-file
+            dense
+            v-model="session"
+            v-show="false"
+            ref="filePicker"
+            accept=".json"
+            @update:model-value="loadSession"
+          />
         </div>
       </div>
       <div class="column justify-evenly" style="height: 75%">
@@ -86,6 +93,7 @@ const alertTopics = {
   }
 }
 
+
 export default {
   setup () {
     return {
@@ -108,7 +116,8 @@ export default {
         'abstract',
         'journal',
         'cord_uid'
-      ])
+      ]),
+      testDois: ref([])
     }
   },
   methods : {
@@ -119,7 +128,7 @@ export default {
       ).then((response) => {
         // console.log(response.data[0])
         for (const element of response.data) {
-          if (element.doi !== "") {
+          if (element.doi !== "" && !this.testDois.includes(element.doi) ) {
             let row = {}
             for (const attribute of this.attributes) {
               row[attribute] = element[attribute]
@@ -149,7 +158,7 @@ export default {
         '/papers',
         { doi: this.DOIText }
       ).then( (response) => {
-        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null) {
+        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null && !this.testDois.includes(response.data['metadata']['doi']) ) {
           let row = response.data['metadata']
           row.keep = true
           row['similar_to'] = ''
@@ -235,6 +244,11 @@ export default {
     })
   },
   created () {
+    api.get(
+        '/test_dois',
+      ).then( (response) => {
+        this.testDois = response.data
+      }).catch( (error) => error.message)
     // window.addEventListener('beforeunload', function(event) {
     //     console.log('prova')
     //     event.returnValue = 'Write something'

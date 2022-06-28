@@ -117,3 +117,13 @@ def similar():
     if by == 'doi':
         results = similar_by_doi(id)
     return jsonify(results)
+
+
+@app.route("/test_dois", methods=['GET'])
+def get_test_dois():
+    if request.method == 'GET':
+        if path.isfile('api/local_data/test_set_dois.json'):
+            with open('api/local_data/test_set_dois.json') as f:
+                return jsonify(json.load(f))
+        else:
+            return jsonify([])

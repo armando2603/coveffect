@@ -5,7 +5,7 @@ import axios from 'axios'
 // const apiGPU = axios.create({ baseURL: 'http://3.21.170.212:61114' })
 // to work in local use instead this ip
 const api = axios.create({ baseURL: 'http://coveffect.ddns.net:61113/' })
-const apiGPU = axios.create({ baseURL: 'http://3.21.170.212:61114' })
+const apiGPU = axios.create({ baseURL: 'http://3.131.83.109:61114' })
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api
