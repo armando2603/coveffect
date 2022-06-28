@@ -1,17 +1,20 @@
-import numpy as np
+# import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model import Predictor
-import json
-import datetime
+# import json
+# import datetime
 import time
-from os import path
+# from os import path
+from os import walk
 from collections import defaultdict
+from scripts.evaluate import Evaluator, evaluate
 
 
 app = Flask(__name__)
 CORS(app)
 pred = Predictor()
+evaluator = Evaluator()
 
 
 @app.route('/predict_and_saliency', methods=['POST'])
@@ -60,13 +63,13 @@ def SaveAndTrain():
             output_instance = ''
             for attribute in instance.keys():
                 if instance[attribute]['attribute'] != 'mutation_type':
-                    output_instance += str(instance[attribute]['attribute']) + ':' ' ' + instance[attribute]['value'] + '<SEPO>'
+                    output_instance += str(instance[attribute]['attribute']) + ':' ' ' + instance[attribute]['value'] + ' | '
             output_list.append(output_instance[:-6] + '<EOS>')
 
 
         effect_list = []
         for mutation_name in effect_dict.keys():
-            effect_string = 'mutation_name: ' + mutation_name + '<SEPO>' + 'effect_list: '
+            effect_string = 'mutation_name: ' + mutation_name + ' | ' + 'effect_list: '
             for effect in effect_dict[mutation_name]:
                 effect_string += effect + ','
             effect_list.append(effect_string[:-1] + '<EOS>')
@@ -84,7 +87,35 @@ def SaveAndTrain():
 @app.route('/getGenerateStatus', methods=['GET'])
 def getGenerateStatus():
     time.sleep(2)
-    return jsonify(pred.status)
+    return jsonify(evaluator.status)
+
+@app.route('/evaluate', methods=['POST'])
+def evaluate_model():
+    data = request.get_json()
+    checkpoint_name = data['checkpoint_name']
+    # evaluator = Evaluator()
+    evaluator.status = 0
+    scores_dicts = evaluator.evaluate(
+        checkpoint_name_input=checkpoint_name,
+    )
+    # del evaluator
+    # evaluate2(prova=checkpoint_name)
+    return jsonify(scores_dicts)
+
+@app.route('/checkpoint_list', methods=['GET'])
+def checkpoint_list():
+    checkpoints_path = 'api/Checkpoints/'
+    test_resuls_path = 'api/test_results/'
+    filenames_checkpoint_folder = next(walk(checkpoints_path), (None, None, []))[2]
+    filenames_test_results_folder = next(walk(test_resuls_path), (None, None, []))[2]
+    filenames_ckpt = [filename for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+    new_checkpoints = [
+        filename for filename in filenames_ckpt if filename[:-5] + '.tsv' not in filenames_test_results_folder
+    ]
+    history_checkpoints = [
+        filename for filename in filenames_ckpt if filename[:-5] + '.tsv' in filenames_test_results_folder
+    ]
+    return jsonify({ 'new_checkpoints': new_checkpoints, 'history_checkpoints': history_checkpoints})
 
 
 if __name__ == '__main__':

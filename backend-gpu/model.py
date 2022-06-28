@@ -5,7 +5,8 @@ import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config
 import torch.nn.functional as F
 from tqdm import tqdm
-from os import path
+from os import path, walk
+import json
 
 def gradient_x_inputs_attribution(prediction_logit, inputs_embeds):
 
@@ -34,6 +35,11 @@ def gradient_x_inputs_attribution(prediction_logit, inputs_embeds):
 class Predictor:
     def __init__(self):
         self.pretrained_model = ''
+        with open('api/local_data/annotation_count.json', 'r') as f:
+            annotation_count = json.load(f)['annotation_count']
+        self.annotation_count = annotation_count
+        print('annotation count:', annotation_count)
+
         self.fields = []
         self.device = torch.device(
             "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -63,7 +69,7 @@ class Predictor:
 
         self.model.resize_token_embeddings(len(self.tokenizer))
         # self.name_model = 'checkpoint_4-epoch=14-val_loss=0.306.ckpt'
-        self.name_model = 'multiple-instances-cord19-epoch=07.ckpt'
+        self.name_model = 'model_0.ckpt'
         checkpoint = torch.load('api/Checkpoints/' + self.name_model, map_location='cpu')
         if 'state_dict' in checkpoint.keys():
             state_dict = checkpoint['state_dict']
@@ -82,13 +88,15 @@ class Predictor:
     def predict_and_saliency(self, input_text, output_attributes):
         self.fields = output_attributes
         self.model = self.base_model.to(self.device) # TODO verify if .to() copy
-        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
-            augmented = 'augmented_'
-        else:
-            augmented = ''
+        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        # print(filenames_checkpoint_folder)
+        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+        # print(versions)
+        last_version = versions[-1]
+        # print('load model version:', last_version)
         self.model.load_state_dict(
             torch.load(
-                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
             )
         )
 
@@ -117,7 +125,7 @@ class Predictor:
                 past_conditional = ''
                 if len(instance) > 0:
                     for output in instance:
-                        past_conditional += output['attribute'] + ': ' + output['value'] + '<SEPO>'
+                        past_conditional += output['attribute'] + ': ' + output['value'] + ' | '
                 
                 tmp_field = field['value']
                 conditional_text = past_conditional + tmp_field + '_list:' if field['multiple'] else past_conditional + tmp_field + ':',
@@ -216,7 +224,7 @@ class Predictor:
         comma_id = self.tokenizer.encode(',')[0]
         eos_id = self.tokenizer.eos_token_id
         sep_id = self.tokenizer.sep_token_id
-        sepo_id = self.tokenizer('<SEPO>')['input_ids'][0]
+        sepo_id = self.tokenizer(' | ')['input_ids'][0]
         output_indexes = [0]
         current_index = 0
         grad_explain = []
@@ -269,13 +277,15 @@ class Predictor:
         table_outputs = []
         self.fields = output_attributes
         self.model = self.base_model.to(self.device) # TODO verify if .to() copy
-        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
-            augmented = 'augmented_'
-        else:
-            augmented = ''
+        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        # print(filenames_checkpoint_folder)
+        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+        # print(versions)
+        last_version = versions[-1]
+        # print('load model version:', last_version)
         self.model.load_state_dict(
             torch.load(
-                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
             )
         )
 
@@ -301,7 +311,7 @@ class Predictor:
                         past_conditional = ''
                         if len(instance) > 0:
                             for output in instance:
-                                past_conditional += output['attribute'] + ': ' + output['value'] + '<SEPO>'
+                                past_conditional += output['attribute'] + ': ' + output['value'] + ' | '
                         tmp_field = field['value']
                         conditional_text = past_conditional + tmp_field + '_list:' if field['multiple'] else past_conditional + tmp_field + ':',
                         # print('conditional text:', conditional_text[0])
@@ -350,12 +360,12 @@ class Predictor:
                                 out_prob = distributions[output_index]
                                 self.confidences.append(np.max(out_prob))
 
-                                start_index = output_index
-                                end_index = output_indexes[i + 1] - 1 if i < (len(outputs_text)-1) else len(generated_sequence)
+                                # start_index = output_index
+                                # end_index = output_indexes[i + 1] - 1 if i < (len(outputs_text)-1) else len(generated_sequence)
 
-                        assert len(outputs_text_filtered) == len(self.confidences), \
-                            f'n of outputs not correspond n of confidences: {outputs_text} {self.confidences}\n'\
-                            +f'Len Input: {prefix_input_ids.shape}, Len Cond: {conditional_ids.shape}'
+                        # assert len(outputs_text_filtered) == len(self.confidences), \
+                        #     f'n of outputs not correspond n of confidences: {outputs_text} {self.confidences}\n'\
+                        #     +f'Len Input: {prefix_input_ids.shape}, Len Cond: {conditional_ids.shape}'
                         
                         
                         for output_index, output in enumerate(outputs_text_filtered):
@@ -385,7 +395,7 @@ class Predictor:
         comma_id = self.tokenizer.encode(',')[0]
         eos_id = self.tokenizer.eos_token_id
         sep_id = self.tokenizer.sep_token_id
-        sepo_id = self.tokenizer('<SEPO>')['input_ids'][0]
+        sepo_id = self.tokenizer(' | ')['input_ids'][0]
         output_indexes = [0]
         current_index = 0
         # past = None
@@ -424,13 +434,15 @@ class Predictor:
 
     def onlineLearning(self, input_text, output_list):
         self.model = self.base_model.to(self.device)
-        if path.isfile('api/Checkpoints/' + 'augmented_' + self.name_model):
-            augmented = 'augmented_'
-        else:
-            augmented = ''
+        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        # print(filenames_checkpoint_folder)
+        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+        # print(versions)
+        last_version = versions[-1]
+        # print('load model version:', last_version)
         self.model.load_state_dict(
             torch.load(
-                'api/Checkpoints/' + augmented + self.name_model, map_location=self.device
+                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
             )
         )
         input_prefix = self.tokenizer.encode(
@@ -475,56 +487,22 @@ class Predictor:
                     not_match = False
                 loss.backward()
                 optimizer.step()
-                # self.model.eval()
-                # with torch.no_grad():
-                #     past = None
-                #     inp = torch.cat(
-                #         (
-                #             torch.tensor(
-                #                 [[self.tokenizer.bos_token_id]],
-                #                 device=self.device
-                #             ),
-                #             input_prefix,
-                #             torch.tensor(
-                #                 [[self.tokenizer.sep_token_id]],
-                #                 device=self.device
-                #             )
-                #         ),
-                #         dim=-1
-                #     )
-                #     generated_sequence = torch.zeros(
-                #         (1, 0),
-                #         device=self.device
-                #     ).long()
-                #     while(len(generated_sequence) < 300):
-                #         out = self.model(
-                #             inp,
-                #             # attention_mask=attn_mask,
-                #             past_key_values=past,
-                #             use_cache=True,
-                #             return_dict=True
-                #         )
-                #         past = out.past_key_values
-                #         last_tensor = out.logits[0, -1, :]
-                #         predicted_token_tensor = torch.argmax(last_tensor)
-                #         inp = predicted_token_tensor.view(1, 1)
-                #         generated_sequence = torch.cat(
-                #             (generated_sequence, predicted_token_tensor.view(1,1)),
-                #             dim=-1
-                #         )
-                #         if predicted_token_tensor == self.tokenizer.eos_token_id:
-                #             break
-                #     print(f'output generato : {self.tokenizer.decode(list(output_ids[0]))} e con generate sequence:', self.tokenizer.decode(list(generated_sequence[0])))
-                #     new_output = generated_sequence
-                #     if new_output.shape == output_ids.shape:
-                #         if torch.all(new_output.eq(output_ids)):
-                #             not_match = False
 
-            # 1
-        torch.save(
-            self.model.state_dict(),
-            'api/Checkpoints/' + 'augmented_' + self.name_model
-        )
+        self.annotation_count += 1
+        with open('api/local_data/annotation_count.json', 'w') as f:
+            json.dump( {'annotation_count': self.annotation_count}, f )
+
+        if (self.annotation_count % 5 == 0):
+            last_version += 1
+            torch.save(
+                self.model.state_dict(),
+                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt'
+            )
+        else:
+            torch.save(
+                self.model.state_dict(),
+                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt'
+            )
         del self.model
         with torch.cuda.device(self.device):
             torch.cuda.empty_cache()

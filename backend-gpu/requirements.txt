@@ -3,4 +3,6 @@ Flask-Cors==3.0.10
 python-dotenv==0.19.1
 flask_ngrok
 transformers
+pandas
 torch
+sentencepiece
