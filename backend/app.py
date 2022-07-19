@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from api.papers import get_paper
+from api.papers import get_paper, get_cord_paper
 from api.retrieval import search as _search
 from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
@@ -22,6 +22,15 @@ def papers():
     if request.method == 'POST':
         data = request.get_json()
         response = get_paper(data['doi'])
+        return jsonify(response)
+
+@app.route("/cord_papers", methods=['GET','POST'])
+def cord_papers():
+    if request.method == 'GET':
+        return jsonify({'response': 'ok'})
+    if request.method == 'POST':
+        data = request.get_json()
+        response = get_cord_paper(data['doi'])
         return jsonify(response)
 
 @app.route("/paperlist", methods=['GET', 'POST'])
