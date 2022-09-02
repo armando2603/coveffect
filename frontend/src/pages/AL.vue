@@ -297,7 +297,10 @@
                         </div>
                       </div>
                       <div class="column justify-evenly q-pl-sm">
-                      <q-btn icon="remove" rounded dense color="red-4" @click="removeInstance(instance_index)" />
+                        <q-btn icon="library_add" rounded dense color="blue-4" @click="duplicateInstance(instance_index)" />
+                      </div>
+                      <div class="column justify-evenly q-pl-sm">
+                        <q-btn icon="remove" rounded dense color="red-4" @click="removeInstance(instance_index)" />
                       </div>
                     </div>
                   </div>
@@ -1241,6 +1244,9 @@ export default {
       if (this.editable_predictions.length === 0) {
         this.predictionIndex = 'no_index'
       }
+    },
+    duplicateInstance (instance_index) {
+      this.editable_predictions.splice(instance_index, 0, JSON.parse(JSON.stringify(this.editable_predictions[instance_index])))
     },
     checkSaveAndTrain () {
       this.showSessionNameEdit = false

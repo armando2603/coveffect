@@ -2,7 +2,7 @@ import annoy
 
 from database.model import Metadata
 
-INDEX_FILE = 'api/local_data/annoy/embeddings.ann'
+INDEX_FILE = '/storage/annoy/embeddings.ann'
 #INDEX_FILE = 'local_data/annoy/embeddings.ann'
 DISTANCE = 'angular'
 FEATURES = 100

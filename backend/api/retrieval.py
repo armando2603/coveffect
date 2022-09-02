@@ -5,7 +5,7 @@ from whoosh.analysis import RegexTokenizer, LowercaseFilter, StopFilter
 
 from database.model import Metadata
 
-IX_RELATIVE_PATH = 'api/local_data/indexdir'
+IX_RELATIVE_PATH = '/storage/indexdir'
 ANALYZER = RegexTokenizer() | LowercaseFilter() | StopFilter()
 INDEX = index.open_dir(IX_RELATIVE_PATH)
 SCHEMA = Schema(
