@@ -1406,6 +1406,48 @@ export default {
       this.stringOptions.effect = response.data
       this.showAddEffect = false
     }).catch( (error) => {error.message})
+    },
+    exportTSV () {
+      let columns = this.visible_columns.slice(0,-1)
+      // write the 1st row that contains columns
+      let content = ''
+      for (const column of columns) {
+        content += column + '\t'
+      }
+      let maxNumInstances = 0
+      for (const row of this.fixedPapers) {
+        if (row.extracted_values.length > maxNumInstances) maxNumInstances = row.extracted_values.length
+      }
+      for (const index of Array(maxNumInstances).keys()) {
+        for (const attribute of this.output_attributes) {
+          content += index + ': ' + attribute + '\t'
+        }
+      }
+      content = content.slice(0, -1) + '\r\n'
+
+      for (const row of this.fixedPapers) {
+        for (const column of columns) {
+          content += row[column] + '\t'
+        }
+        for (const index of Array(maxNumInstances).keys()) {
+          if (index < row.extracted_values.length) {
+            for (const attribute of this.output_attributes){
+              content += row.extracted_values[index][attribute].value + '\t'
+            }
+          } else {
+            for (const attribute of this.output_attributes){
+              content += '' + '\t'
+            }
+          }
+        }
+        content = content.slice(0, -1) + '\r\n'
+      }
+
+      exportFile(
+        'table-export.tsv',
+        content,
+        'text/tsv'
+      )
     }
   },
   created () {
