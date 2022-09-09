@@ -11,6 +11,7 @@ services:
         container_name: coveffect-frontend
         ports:
             - 8082:8080
+            # - 8080:8080
     backend:
         # build:
         #     context: ./backend/
@@ -22,6 +23,8 @@ services:
         command: sh -c "flask run -p 5003 --host=0.0.0.0"
         ports:
             - 61113:5003
+        environment:
+            - PYTHONUNBUFFERED=1
     database:
         container_name: coveffect-db
         image: 2603931630/coveffect-db:latest
