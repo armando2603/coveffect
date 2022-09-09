@@ -30,7 +30,7 @@
           </div>
           <div class="row justify-center q-pt-md" >
             <div class="" style='width: 70%'>
-            <q-input outlined placeholder="Insert keywords"  bottom-slots v-model="keywordText" stack-label>
+            <q-input outlined placeholder="Insert keywords" @keydown.enter.prevent="searchByKeywords();loadKey=true"  bottom-slots v-model="keywordText" stack-label>
               <template v-slot:append>
                 <q-icon v-if="keywordText !== ''" name="close" @click="keywordText = ''" class="cursor-pointer" />
                 <!-- <q-icon name="search"/> -->
@@ -49,7 +49,14 @@
           </div>
           <div class="row justify-center q-pt-md">
             <div class="" style='width: 70%'>
-              <q-input placeholder="Insert a DOI in the form of 10.1101/2020.11.28.20237016" outlined  bottom-slots v-model="DOIText" stack-label>
+              <q-input
+              placeholder="Insert a DOI in the form of 10.1101/2020.11.28.20237016"
+              outlined
+              bottom-slots
+              v-model="DOIText"
+              stack-label
+              @keydown.enter.prevent="searchByDOI(); loadDoi=true"
+              >
                 <template v-slot:append>
                   <q-icon v-if="DOIText !== ''" name="close" @click="DOIText = ''" class="cursor-pointer" />
                 </template>

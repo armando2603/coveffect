@@ -42,6 +42,10 @@ def get_cord_paper(doi):
     except KeyError as e:
         numCitedBy = 0
     try:
+        year = paper['year']
+    except KeyError as e:
+        year = 'not available'
+    try:
         res = Metadata.query.filter_by(doi=str(doi)).first()
         if res is None:
             return {'found':False,'metadata': ''}
@@ -49,6 +53,7 @@ def get_cord_paper(doi):
             return {'found':False,'metadata': ''}
         response = {'found':True,'metadata':res.serialize()}
         response['metadata']['numCitedBy'] = numCitedBy
+        response['metadata']['year'] = year
         return response
     except Exception as e:
         print(f'The following error occurs: {e.__class__}')

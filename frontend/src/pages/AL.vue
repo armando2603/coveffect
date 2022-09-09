@@ -1,52 +1,6 @@
 <template>
   <q-page padding class="row items-strech">
     <div class="col-12 column no-wrap">
-      <q-dialog v-model='showFixedList'>
-        <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
-          <q-card-section class="row justify-between">
-            <div class="text-h5">Annotated Papers List</div>
-            <div class="col-1 justify-end row">
-              <q-btn class='' icon="close" flat round dense v-close-popup />
-            </div>
-          </q-card-section>
-          <q-card-section class="column" style="height: 100%">
-            <div class="q-pa-md column" style="flex-grow: 1;overflow: auto">
-              <q-table
-              style="flex-grow: 1;overflow: auto"
-              class="my-sticky-virtscroll-table"
-              :columns="columns"
-              :rows="fixedPapers"
-              virtual-scroll
-              wrap-cells
-              separator="cell"
-              row-key="doi"
-              :rows-per-page-options="[0]"
-              :virtual-scroll-sticky-size-start="48"
-              my-sticky-virtscroll-table
-              :visible-columns="annotated_visible_columns"
-              >
-              <template v-slot:body-cell-doi="props">
-                <q-td
-                key='doi'
-                :props="props"
-                >
-                  <!-- <q-checkbox v-model="props.row.keep" /> -->
-                  <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
-                </q-td>
-              </template>
-              <template v-slot:body-cell-extractions="props">
-                <q-td
-                key='extractions'
-                :props="props"
-                >
-                  <q-btn unelevated dense size="sm" color="primary" label='Extracted Values'/>
-                </q-td>
-              </template>
-              </q-table>
-            </div>
-          </q-card-section>
-        </q-card>
-      </q-dialog>
       <q-dialog v-model='showList'>
         <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
           <q-card-section class="row justify-between">
@@ -93,6 +47,88 @@
                 </q-td>
               </template>
               </q-table>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+      <q-dialog v-model="showAnnotationList">
+        <q-card class="column no-wrap" style="min-width: 100%; height: 95%">
+          <q-card-section class="row justify-between">
+            <div class="text-h5">Annotated Papers List</div>
+            <div class="col-1 justify-end row">
+              <q-btn class='' icon="close" flat round dense v-close-popup />
+            </div>
+          </q-card-section>
+          <q-card-section class="column" style="height: 100%">
+            <q-table
+            style="flex-grow: 1;overflow: auto"
+            class="my-sticky-virtscroll-table"
+            :columns="columns"
+            :rows="fixedPapers"
+            virtual-scroll
+            wrap-cells
+            separator="cell"
+            row-key="doi"
+            :rows-per-page-options="[0]"
+            :virtual-scroll-sticky-size-start="48"
+            my-sticky-virtscroll-table
+            :visible-columns="annotated_visible_columns"
+            >
+              <template v-slot:top>
+                <div class="row justify-start col-10" >
+                  <div class="text-h5 text-primary q-pl-md q-pr-md"></div>
+                </div>
+                <div class="row justify-end col-2">
+                  <q-btn rounded no-caps color='primary' label="Export TSV" @click='exportTSV' />
+                </div>  
+              </template>
+              <template v-slot:body-cell-doi="props">
+                <q-td
+                key='doi'
+                :props="props"
+                >
+                  <!-- <q-checkbox v-model="props.row.keep" /> -->
+                  <a :href="'https://dx.doi.org/' + props.row.doi" target="_blank">{{props.row.doi}}</a>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-extractions="props">
+                <q-td
+                key='extractions'
+                :props="props"
+                >
+                  <q-btn unelevated dense size="sm" color="primary" label='Extracted Annotations' @click="showExtractedValues = true; currentPaper = props.row.index"/>
+                </q-td>
+              </template>
+            </q-table>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+      <q-dialog v-model="showExtractedValues">
+        <q-card style="width: 40%;height: 100%">
+          <q-card-section class="row justify-evenly">
+            <div class="col-11 text-h5 text-bold text-primary row justify-evenly">Extracted Annotations</div>
+            <div class="col-1 justify-end row">
+              <q-btn class='' color="primary" icon="close" flat round dense v-close-popup />
+            </div>
+          </q-card-section>
+          <q-card-section>
+            <div class="q-pt-md" v-for="(predictions_instance, instance_index) in fixedPapers[currentPaper].extracted_values" :key="predictions_instance">
+              <q-card class="">
+              <div class="q-pl-md">
+              <div class="text-primary text-h6">{{instance_index + 1}}</div>
+              <div class='row no-wrap' v-for="attribute in output_attributes"  :key="attribute">
+                <!-- {{predictions_instance[attribute]}} -->
+                <q-field style="width: 300px" stack-label borderless label-color="primary" :label='attribute'>
+                  <template v-slot:control>
+                    <div v-if="fixedPapers.length !== 0" class="self-center full-width no-outline" tabindex="0">{{predictions_instance[attribute].value}}</div>
+                  </template>
+                </q-field>
+                <div class="q-pl-xl column justify-evenly">
+                <q-badge v-if='predictions_instance[attribute].fullPaperValue' color="orange-8" label="Not in abstract" style='white-space: pre-line;height: 20px'/>
+                </div>
+              </div>
+              </div>
+              </q-card>
             </div>
           </q-card-section>
         </q-card>
@@ -165,11 +201,18 @@
         <div class="row">
           <div class="q-px-sm column justify-evenly">
               <div class="row justify-end">
-                <q-btn
+                <!-- <q-btn
                   dense
                   label="Annotated Papers"
                   no-caps
                   @click="this.$router.replace({name: 'annotations', params: {fixedPapers: JSON.stringify(this.fixedPapers), paperList: JSON.stringify(this.paperList), sessionName: this.sessionName}})"
+                  color="primary"
+                /> -->
+                <q-btn
+                  dense
+                  label="Annotated Papers"
+                  no-caps
+                  @click="showAnnotationList=true"
                   color="primary"
                 />
               </div>
@@ -537,14 +580,14 @@ import { api, apiGPU } from 'boot/axios'
 
 const visible_columns = [
   // "cord_uid",
-  // "index",
+  "index",
   "doi",
   "title",
   "authors",
   "abstract",
   "journal",
   "citations",
-  "warns",
+  // "warns",
   "year"
 ]
 
@@ -581,6 +624,7 @@ export default {
           message: message
         })
       },
+      showAnnotationList: ref(false),
       showAddEffect: ref(false),
       newEffectName: ref(null),
       savingSession: ref(false),
@@ -597,7 +641,7 @@ export default {
       showAddInstance: ref(false),
       annotated_visible_columns,
       visible_columns,
-      showFixedList: ref(false),
+      showExtractedValues: ref(false),
       paperList: ref([]),
       currentPaper: ref(0),
       showList: ref(false),
@@ -630,7 +674,7 @@ export default {
       insertedValue: ref(''),
       filterOptions: ref([]),
       stringOptions: ref({
-        mutation_type: ['single', 'group', 'variant'],
+        mutation_type: ['single', 'variant'],
         protein: [
           'E', 'M', 'N', 'NS3',
           'NS6', 'NS7A', 'NS7B', 'NS8', 'NSP1',
@@ -697,7 +741,7 @@ export default {
       ]),
       pagination: ref({
         rowsPerPage: 200,
-        sortBy: 'warns',
+        sortBy: 'index',
         descending: true
       }),
       columns: [
@@ -768,6 +812,7 @@ export default {
         for (const [instance_index, instance] of this.editable_predictions.entries()){
           for (const prediction_index in instance) {
             this.editable_predictions[instance_index][prediction_index].fullPaperValue = false
+            this.editable_predictions[instance_index][prediction_index].copied = false
           }
           let mutationTypeOutput = {
             value: null,
@@ -776,9 +821,8 @@ export default {
             saliency_map: [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }],
             fullPaperValue: false
           }
-          if (this.editable_predictions[instance_index][0].value.split('+').length > 1) {
-            mutationTypeOutput.value = 'group'
-          } else if (this.editable_predictions[instance_index][0].value.split('_').length > 1) {
+          
+          if (this.editable_predictions[instance_index][0].value.split('_').length > 1) {
             mutationTypeOutput.value = 'single'
           } else {
             mutationTypeOutput.value = 'variant'
@@ -888,7 +932,7 @@ export default {
     },
     getOutputColor (prediction) {
       if (prediction.fixed) {return 'info'}
-      if (prediction.value === "Insert Value") {return 'grey-3'}
+      if (prediction.value === "Insert Value" || prediction.copied === true) {return 'grey-3'}
       if (prediction.confidence > this.greenThreshold) return 'green-3'
       else {
         if (prediction.confidence < this.redThreshold) return 'red-3'
@@ -948,7 +992,7 @@ export default {
       this.editable_predictions[this.instanceIndex][this.predictionIndex].confidence = 1
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fixed = true
       this.editable_predictions[this.instanceIndex][this.predictionIndex].fullPaperValue = this.fullPaperValue
-
+      this.editable_predictions[this.instanceIndex][this.predictionIndex].saliency_map = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
       // console.log(Date())
       this.feedback_list.push(
         {
@@ -1246,7 +1290,12 @@ export default {
       }
     },
     duplicateInstance (instance_index) {
-      this.editable_predictions.splice(instance_index, 0, JSON.parse(JSON.stringify(this.editable_predictions[instance_index])))
+      let duplicateInstance = JSON.parse(JSON.stringify(this.editable_predictions[instance_index]))
+      for (const prediction_index in duplicateInstance) {
+        duplicateInstance[prediction_index].saliency_map = [{ text: this.paperList[this.currentPaper].abstract, color: 'bg-white' }]
+        duplicateInstance[prediction_index].copied = true
+      }
+      this.editable_predictions.splice(instance_index + 1, 0, duplicateInstance)
     },
     checkSaveAndTrain () {
       this.showSessionNameEdit = false
@@ -1315,7 +1364,7 @@ export default {
         // this.fixedPapers = this.fixedPapers.concat(sessionJSON.annotatedPapers)
         // this.paperList = this.paperList.concat(sessionJSON.PaperList)
 
-        this.generateTable()
+        // this.generateTable()
         this.resetPage()
         // reader.result
         // this.fileGEO = null
@@ -1388,7 +1437,8 @@ export default {
     this.sessionName = this.$route.params.sessionName
     this.paperList = JSON.parse(this.$route.params.paperList)
     // console.log(this.paperList)
-    this.generateTable()
+    // this.generateTable()
+    this.resetPage()
   }
 }
 </script>
