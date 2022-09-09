@@ -1,6 +1,7 @@
 # Backend gitignore
 __pycache__/
 venv/
+data/
 # Frontend gitignore
 .vscode
 .DS_Store

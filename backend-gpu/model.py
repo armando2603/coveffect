@@ -1,11 +1,13 @@
+from cgi import print_arguments
 from collections import OrderedDict
 from typing import Sequence
 import numpy as np
 import torch
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Config, AutoModelForCausalLM, AutoTokenizer
 import torch.nn.functional as F
 from tqdm import tqdm
 from os import path, walk
+import os
 import json
 
 def gradient_x_inputs_attribution(prediction_logit, inputs_embeds):
@@ -35,71 +37,83 @@ def gradient_x_inputs_attribution(prediction_logit, inputs_embeds):
 class Predictor:
     def __init__(self):
         self.pretrained_model = ''
-        with open('api/local_data/annotation_count.json', 'r') as f:
-            annotation_count = json.load(f)['annotation_count']
+
+        if path.exists('api/local_data/annotation_count.json'):
+            with open('api/local_data/annotation_count.json', 'r') as f:
+                annotation_count = json.load(f)['annotation_count']
+        else:
+            annotation_count = 0
         self.annotation_count = annotation_count
         print('annotation count:', annotation_count)
 
         self.fields = []
         self.device = torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu"
+            "cuda:1" if torch.cuda.is_available() else "cpu"
         )
+        
         print(torch.cuda.is_available())
         self.generated_sequence = None
-        self.MAX_LEN = 900
+        self.MAX_LEN = 1000
         self.model = None
         self.status = 0
         self.model_id = None
         # Load pre-trained model (weights)
-        model_name = 'mrm8488/GPT-2-finetuned-CORD19'
-        self.config = GPT2Config()
-        self.model = GPT2LMHeadModel(self.config)
-        self.model.eval()
-        self.tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-        self.tokenizer.add_special_tokens({
-            'pad_token': '<PAD>',
-            'bos_token': '<BOS>',
-            'eos_token': '<EOS>',
-            'sep_token': '<SEP>',
-            'additional_special_tokens': ['<SEPO>']
-        })
-        self.base_model = GPT2LMHeadModel(self.config)
-        self.base_model.resize_token_embeddings(len(self.tokenizer))
-        self.base_model.eval()
+        # model_name = 'mrm8488/GPT-2-finetuned-CORD19'
+        # self.config = GPT2Config()
+        # self.model = GPT2LMHeadModel(self.config)
+        # self.model.eval()
+        # self.tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+        # self.tokenizer.add_special_tokens({
+        #     'pad_token': '<PAD>',
+        #     'bos_token': '<BOS>',
+        #     'eos_token': '<EOS>',
+        #     'sep_token': '<SEP>',
+        #     'additional_special_tokens': ['<SEPO>']
+        # })
+        # self.base_model = GPT2LMHeadModel(self.config)
+        # self.base_model.resize_token_embeddings(len(self.tokenizer))
+        # self.base_model.eval()
 
-        self.model.resize_token_embeddings(len(self.tokenizer))
-        # self.name_model = 'checkpoint_4-epoch=14-val_loss=0.306.ckpt'
-        self.name_model = 'model_0.ckpt'
-        checkpoint = torch.load('api/Checkpoints/' + self.name_model, map_location='cpu')
-        if 'state_dict' in checkpoint.keys():
-            state_dict = checkpoint['state_dict']
-            new_state_dict = OrderedDict()
-            for k, v in state_dict.items():
-                if k[:6] == 'model.':
-                    name = k[6:]
-                else:
-                    name = k
-                new_state_dict[name] = v
-            self.model.load_state_dict(new_state_dict)
-            torch.save(self.model.state_dict(), 'api/Checkpoints/' + self.name_model)
-        else:
-            del checkpoint
+        # self.model.resize_token_embeddings(len(self.tokenizer))
+        # # self.name_model = 'checkpoint_4-epoch=14-val_loss=0.306.ckpt'
+        # self.name_model = 'model_0.ckpt'
+        # checkpoint = torch.load('api/Checkpoints/' + self.name_model, map_location='cpu')
+        # if 'state_dict' in checkpoint.keys():
+        #     state_dict = checkpoint['state_dict']
+        #     new_state_dict = OrderedDict()
+        #     for k, v in state_dict.items():
+        #         if k[:6] == 'model.':
+        #             name = k[6:]
+        #         else:
+        #             name = k
+        #         new_state_dict[name] = v
+        #     self.model.load_state_dict(new_state_dict)
+        #     torch.save(self.model.state_dict(), 'api/Checkpoints/' + self.name_model)
+        # else:
+        #     del checkpoint
+        self.name_model = 'model_0'
+        self.model = None
+        self.tokenizer = AutoTokenizer.from_pretrained('api/Checkpoints/' + self.name_model)
+        # self.model = AutoModelForCausalLM.from_pretrained('api/Checkpoints/' + self.name_model)
+        # self.model.eval()
+        # self.tokenizer = AutoTokenizer.from_pretrained('api/Checkpoints/' + self.name_model)
 
     def predict_and_saliency(self, input_text, output_attributes):
         self.fields = output_attributes
-        self.model = self.base_model.to(self.device) # TODO verify if .to() copy
-        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        # self.model = self.base_model.to(self.device) # TODO verify if .to() copy
+        # filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        list_checkpoint_folder = next(os.walk('api/Checkpoints/'))[1]
         # print(filenames_checkpoint_folder)
-        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
-        # print(versions)
+        versions = [
+            int(model_name.split('_')[1].split('.')[0])\
+                for model_name in list_checkpoint_folder if 'model' in model_name
+        ]
+        versions.sort()
+        print(versions)
         last_version = versions[-1]
         # print('load model version:', last_version)
-        self.model.load_state_dict(
-            torch.load(
-                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
-            )
-        )
-
+        self.model = AutoModelForCausalLM.from_pretrained('api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version))
+        self.model.to(self.device)
         # print('Input Text: ', input_text)
         prefix_input_ids = self.tokenizer.encode(
             input_text,
@@ -147,10 +161,12 @@ class Predictor:
                     ]
                 # self.grad_explains.append(np.array(grad_explain))
                 # print(self.tokenizer.decode(generated_sequence))
-
-                print('generated sequence:', self.tokenizer.decode(generated_sequence))
-                if (len(generated_sequence)) == 0 and field['value'] == 'mutation_name' and field['multiple'] :
+                txt_generated_sequence = self.tokenizer.decode(generated_sequence)
+                print('generated sequence:', txt_generated_sequence)
+                print('len generated sequence:', len(txt_generated_sequence))
+                if ((len(generated_sequence)) == 0 or txt_generated_sequence == ' ' or txt_generated_sequence == ' , ,' or txt_generated_sequence == ' ,') and field['value'] == 'mutation_name' and field['multiple'] :
                     return []
+                
                 
                 
                 outputs_text = self.tokenizer.decode(generated_sequence).split(',')
@@ -201,8 +217,8 @@ class Predictor:
         # self.model = self.base_model
         if self.model_id == 1:
             del self.model
-            with torch.cuda.device(self.device):
-                torch.cuda.empty_cache()
+            # with torch.cuda.device(self.device):
+            #     torch.cuda.empty_cache()
         return self.generated_outputs
         # , self.grad_explains
 
@@ -276,18 +292,24 @@ class Predictor:
         self.status = 0
         table_outputs = []
         self.fields = output_attributes
-        self.model = self.base_model.to(self.device) # TODO verify if .to() copy
-        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        # self.model = self.base_model.to(self.device) # TODO verify if .to() copy
+        list_checkpoint_folder = next(os.walk('api/Checkpoints/'))[1]
         # print(filenames_checkpoint_folder)
-        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+        versions = [
+            int(model_name.split('_')[1].split('.')[0])\
+                for model_name in list_checkpoint_folder if 'model' in model_name
+        ]
+        versions.sort()
         # print(versions)
         last_version = versions[-1]
         # print('load model version:', last_version)
-        self.model.load_state_dict(
-            torch.load(
-                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
-            )
-        )
+        self.model = AutoModelForCausalLM.from_pretrained('api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version))
+        self.model.to(self.device)
+        # self.model.load_state_dict(
+        #     torch.load(
+        #         'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
+        #     )
+        # )
 
 
         with torch.no_grad():
@@ -339,15 +361,16 @@ class Predictor:
                         distributions = [
                             distribution.cpu().numpy() for distribution in distributions
                         ]
-                        # print(self.tokenizer.decode(generated_sequence))
+                        print(self.tokenizer.decode(generated_sequence))
                         outputs_text = self.tokenizer.decode(generated_sequence).split(',')
 
                         if not ended_with_eos:
                             outputs_text = outputs_text[:-1]
                             output_indexes = output_indexes[:-1]
                         # print('Abstract number:', it)
+                        txt_generated_sequence = self.tokenizer.decode(generated_sequence)
                         print('generated sequence:', self.tokenizer.decode(generated_sequence))
-                        if (len(generated_sequence)) == 0 and field['value'] == 'mutation_name' and field['multiple'] :
+                        if ((len(generated_sequence)) == 0 or txt_generated_sequence == ' ' or txt_generated_sequence == ' , ,' or txt_generated_sequence == ' ,') and field['value'] == 'mutation_name' and field['multiple'] :
                             tmp_generated_outputs = []
                             break
 
@@ -385,8 +408,8 @@ class Predictor:
                 table_outputs.append(self.generated_outputs)
             if self.model_id == 1:
                 del self.model
-                with torch.cuda.device(self.device):
-                    torch.cuda.empty_cache()
+                # with torch.cuda.device(self.device):
+                #     torch.cuda.empty_cache()
             return table_outputs
 
     def generate(self, input_ids):
@@ -418,6 +441,7 @@ class Predictor:
 
             if (predicted_token_tensor == eos_id) or (predicted_token_tensor == sepo_id) or (predicted_token_tensor == sep_id) :
                 ended_with_eos = True
+                print('ended with eos')
                 break
 
             distributions.append(
@@ -433,18 +457,19 @@ class Predictor:
         return generated_sequence, output_indexes, distributions, ended_with_eos
 
     def onlineLearning(self, input_text, output_list):
-        self.model = self.base_model.to(self.device)
-        filenames_checkpoint_folder = next(walk('api/Checkpoints/'), (None, None, []))[2]
+        list_checkpoint_folder = next(os.walk('api/Checkpoints/'))[1]
         # print(filenames_checkpoint_folder)
-        versions = [int(filename.split('_')[1].split('.')[0]) for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+        versions = [
+            int(model_name.split('_')[1].split('.')[0])\
+                for model_name in list_checkpoint_folder if 'model' in model_name
+        ]
+        versions.sort()
         # print(versions)
         last_version = versions[-1]
         # print('load model version:', last_version)
-        self.model.load_state_dict(
-            torch.load(
-                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt', map_location=self.device
-            )
-        )
+        self.model = AutoModelForCausalLM.from_pretrained('api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version))
+        self.model.to(self.device)
+
         input_prefix = self.tokenizer.encode(
             input_text,
             return_tensors='pt',
@@ -471,7 +496,7 @@ class Predictor:
                 input_prefix.shape[1] + 2
             ) * -100
 
-            optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-5)
+            optimizer = torch.optim.AdamW(self.model.parameters(), lr=5e-6)
             new_output = torch.empty(output_ids.shape, device=self.device)
             not_match = True
             max_epochs = 10
@@ -483,7 +508,7 @@ class Predictor:
                 output = self.model(inp_out_ids, labels=labels, return_dict=True)
                 loss = output.loss
                 print(loss)
-                if (loss < 0.1):
+                if (loss < 0.175):
                     not_match = False
                 loss.backward()
                 optimizer.step()
@@ -491,21 +516,13 @@ class Predictor:
         self.annotation_count += 1
         with open('api/local_data/annotation_count.json', 'w') as f:
             json.dump( {'annotation_count': self.annotation_count}, f )
-
         if (self.annotation_count % 5 == 0):
             last_version += 1
-            torch.save(
-                self.model.state_dict(),
-                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt'
-            )
-        else:
-            torch.save(
-                self.model.state_dict(),
-                'api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version) + '.ckpt'
-            )
+        self.model.save_pretrained('api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version))
+        self.tokenizer.save_pretrained('api/Checkpoints/' + self.name_model.split('_')[0] + '_' + str(last_version))
         del self.model
-        with torch.cuda.device(self.device):
-            torch.cuda.empty_cache()
+        # with torch.cuda.device(self.device):
+        #     torch.cuda.empty_cache()
 
     def _get_embeddings(self, input_ids):
             """
