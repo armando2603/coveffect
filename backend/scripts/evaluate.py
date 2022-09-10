@@ -811,6 +811,7 @@ class Evaluator:
                     generated_outputs = tmp_generated_outputs
                 
                 table_outputs.append(dict(doi=doi, outputs=generated_outputs))
+            self.status = 0
             return table_outputs
 
     def compute_scores(self, predictions, targets, confusion_only=False):

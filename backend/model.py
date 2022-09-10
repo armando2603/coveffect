@@ -224,6 +224,7 @@ class Predictor:
             del self.model
             # with torch.cuda.device(self.device):
             #     torch.cuda.empty_cache()
+        self.status_generate = 0
         return self.generated_outputs
         # , self.grad_explains
 
@@ -415,6 +416,7 @@ class Predictor:
                 del self.model
                 # with torch.cuda.device(self.device):
                 #     torch.cuda.empty_cache()
+            self.status_generate = 0
             return table_outputs
 
     def generate(self, input_ids):
@@ -530,6 +532,7 @@ class Predictor:
         del self.model
         # with torch.cuda.device(self.device):
         #     torch.cuda.empty_cache()
+        self.status_train = 0
 
     def _get_embeddings(self, input_ids):
             """
