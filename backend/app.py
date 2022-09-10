@@ -222,12 +222,12 @@ def get_generate_status_evaluator():
 @app.route('/get_status_train', methods=['GET'])
 def get_status_train():
     time.sleep(2)
-    return jsonify(evaluator.status_train)
+    return jsonify(pred.status_train)
 
 @app.route('/get_status_prediction', methods=['GET'])
 def get_status_prediction():
-    time.sleep(2)
-    return jsonify(evaluator.status_prediction)
+    time.sleep(0.5)
+    return jsonify(pred.status_prediction)
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_model():

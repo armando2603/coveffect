@@ -831,7 +831,7 @@ export default {
       this.predictionIndex = 'no_index'
       this.instanceIndex = 0
       this.editable_predictions = []
-      this.loadStatusPrediction()
+      this.getLoadStatusPrediction()
       apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
@@ -1174,7 +1174,7 @@ export default {
       //   outputs.push({ attribute: output.attribute, value: output.value })
       // }
       if (this.sessionName !== 'notrain') {
-      this.loadStatusTrain()
+      this.getLoadStatusTrain()
       apiGPU.post(
         '/save_and_train',
         {
