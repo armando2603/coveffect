@@ -278,11 +278,17 @@ export default {
       }).catch( (error) => {error.message})
     },
     getLoadStatus () {
+      apiGPU.get('/reset_status_evaluator')
+        .then(responde => {
+          this.getLoadStatusNext()
+        }).catch(error => console.log(error))
+    },
+    getLoadStatusNext () {
       apiGPU.get('/get_status_evaluator')
         .then(responde => {
           this.loadStatus = Math.round(responde.data)
           console.log(this.loadStatus)
-          if (this.loadStatus < 100) this.getLoadStatus()
+          if (this.loadStatus < 100) this.getLoadStatusNext()
           else this.showTestLoad = false
         }).catch(error => console.log(error))
     },

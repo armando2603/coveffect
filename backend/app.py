@@ -216,18 +216,30 @@ def SaveAndTrain():
 
 @app.route('/get_status_evaluator', methods=['GET'])
 def get_generate_status_evaluator():
-    time.sleep(2)
+    time.sleep(1)
     return jsonify(evaluator.status)
+
+@app.route('/reset_status_evaluator', methods=['GET'])
+def reset_generate_status_evaluator():
+    evaluator.status = 0
 
 @app.route('/get_status_train', methods=['GET'])
 def get_status_train():
-    time.sleep(2)
+    time.sleep(0.5)
     return jsonify(pred.status_train)
+
+@app.route('/reset_status_train', methods=['GET'])
+def reset_status_train():
+    pred.status_train = 0
 
 @app.route('/get_status_prediction', methods=['GET'])
 def get_status_prediction():
     time.sleep(0.5)
     return jsonify(pred.status_prediction)
+
+@app.route('/reset_status_prediction', methods=['GET'])
+def reset_status_prediction():
+    pred.status_prediction = 0
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_model():

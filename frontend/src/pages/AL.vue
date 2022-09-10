@@ -831,6 +831,7 @@ export default {
       this.predictionIndex = 'no_index'
       this.instanceIndex = 0
       this.editable_predictions = []
+      this.getLoadStatusPrediction()
       apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
@@ -880,7 +881,6 @@ export default {
         // this.activateNoGpuMode()
         
       })
-      setTimeout(this.getLoadStatusPrediction(), 500);
     },
     visualize (instanceIndex, predictionIndex) {
       if (this.predictionIndex !== predictionIndex) {
@@ -1288,19 +1288,31 @@ export default {
       // this.loadSelection()
     },
     getLoadStatusPrediction () {
+      apiGPU.get('/reset_status_prediction')
+        .then(responde => {
+          this.getLoadStatusPredictionNext()
+        }).catch(error => console.log(error))
+    },
+    getLoadStatusPredictionNext () {
       apiGPU.get('/get_status_prediction')
         .then(responde => {
           this.loadStatusPrediction = Math.round(responde.data)
           console.log(this.loadStatusPrediction)
-          if (this.loadStatusPrediction < 100) this.getLoadStatusPrediction()
+          if (this.loadStatusPrediction < 100) this.getLoadStatusPredictionNext()
         }).catch(error => console.log(error))
     },
     getLoadStatusTrain () {
+      apiGPU.get('/reset_status_train')
+        .then(responde => {
+          this.getLoadStatusTrainNext()
+        }).catch(error => console.log(error))
+    },
+    getLoadStatusTrainNext () {
       apiGPU.get('/get_status_train')
         .then(responde => {
           this.loadStatusTrain = Math.round(responde.data)
           console.log(this.loadStatusTrain)
-          if (this.loadStatusTrain < 100) this.getLoadStatusTrain()
+          if (this.loadStatusTrain < 100) this.getLoadStatusTrainNext()
         }).catch(error => console.log(error))
     },
     storeFixedPaper (paper) {
