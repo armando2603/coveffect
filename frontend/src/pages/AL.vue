@@ -880,7 +880,7 @@ export default {
         // this.activateNoGpuMode()
         
       })
-      this.getLoadStatusPrediction()
+      setTimeout(this.getLoadStatusPrediction(), 500);
     },
     visualize (instanceIndex, predictionIndex) {
       if (this.predictionIndex !== predictionIndex) {
