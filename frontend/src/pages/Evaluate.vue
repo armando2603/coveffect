@@ -278,7 +278,7 @@ export default {
       }).catch( (error) => {error.message})
     },
     getLoadStatus () {
-      apiGPU.get('/getGenerateStatus')
+      apiGPU.get('/get_status_evaluator')
         .then(responde => {
           this.loadStatus = Math.round(responde.data)
           console.log(this.loadStatus)

@@ -238,7 +238,17 @@
           </q-card-section>
           <q-card-section class="column" style="overflow: auto; flex-grow: 1">
             <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
-              <q-spinner color="primary" size="5em" />
+              <!-- <q-spinner color="primary" size="5em" /> -->
+              <q-circular-progress
+                show-value
+                class=""
+                :value="loadStatusPrediction"
+                size="5em"
+                font-size="16px"
+                color="primary"
+              >
+              {{ loadStatusPrediction }}%
+              </q-circular-progress>
             </div>
             <div v-if='!loadGpt2' class="scroll overflow-auto">
               <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
@@ -313,7 +323,17 @@
               </q-card-section>
               <q-card-section style="overflow: auto; flex-grow: 1;max-height: 400px">
                 <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
-                  <q-spinner color="primary" size="6em" />
+                  <!-- <q-spinner color="primary" size="6em" /> -->
+                  <q-circular-progress
+                    show-value
+                    class=""
+                    :value="loadStatusPrediction"
+                    size="7em"
+                    font-size="16px"
+                    color="primary"
+                  >
+                  {{ loadStatusPrediction }}%
+                  </q-circular-progress>
                 </div>
                 <div v-if='!loadGpt2' class='my-outputs scroll overflow-auto' style="overflow: auto">
                   <div class="column" v-for="(predictions_instance, instance_index) in editable_predictions" :key="predictions_instance">
@@ -397,9 +417,19 @@
               </div>
             </q-card-section>
             <q-card-section class="row justify-evenly" v-if='loadingRetraining'>
-              <q-spinner color="primary" size="3em" />
+              <!-- <q-spinner color="primary" size="3em" /> -->
+              <q-circular-progress
+                show-value
+                class=""
+                :value="loadStatusTrain"
+                size="5em"
+                font-size="16px"
+                color="primary"
+              >
+              {{ loadStatusTrain }}%
+              </q-circular-progress>
             </q-card-section>
-            <q-card-section class="row justify-evenly" v-if='loadingRegenerating'>
+            <!-- <q-card-section class="row justify-evenly" v-if='loadingRegenerating'>
               <q-circular-progress
                 show-value
                 class=""
@@ -410,7 +440,7 @@
               >
               {{ loadStatus }}%
               </q-circular-progress>
-            </q-card-section>
+            </q-card-section> -->
             <q-card-section class="row justify-evenly">
               <span v-if='!loadingRegenerating && !loadingRetraining' class="q-ml-sm">You want to submit your corrections??</span>
               <span v-if='loadingRegenerating' class="q-ml-sm">Updating the table...</span>
@@ -773,7 +803,8 @@ export default {
       showSaveAndTrain: ref(false),
       loadingRetraining: ref(false),
       loadingRegenerating: ref(false),
-      loadStatus: ref(0),
+      loadStatusPrediction: ref(0),
+      loadStatusTrain: ref(0),
       edited_Papers: ref([]),
       fixedPapers: ref([]),
       loadGpt2: ref(false)
@@ -800,6 +831,7 @@ export default {
       this.predictionIndex = 'no_index'
       this.instanceIndex = 0
       this.editable_predictions = []
+      this.loadStatusPrediction()
       apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
@@ -1142,6 +1174,7 @@ export default {
       //   outputs.push({ attribute: output.attribute, value: output.value })
       // }
       if (this.sessionName !== 'notrain') {
+      this.loadStatusTrain()
       apiGPU.post(
         '/save_and_train',
         {
@@ -1149,34 +1182,34 @@ export default {
           outputs: extracted_values
         }
       ).then((response) => {
-        const inputList = []
-        for (const row of this.paperList) {
-          inputList.push(row.abstract)
-        }
+        // const inputList = []
+        // for (const row of this.paperList) {
+        //   inputList.push(row.abstract)
+        // }
         // TODO: aggiungi il sample modificato alla lista dei sample modificati
         
         this.loadingRetraining = false
-        this.loadingRegenerating = true
-        apiGPU.post(
-          '/generate_table',
-          { output_attributes: this.predictionAttributes, inputs: inputList }
-        ).then((response) => {
-          const extracted_values_list = response.data
-          console.log('extracted values of paper list')
-          console.log(extracted_values_list)
+        // this.loadingRegenerating = true
+        // apiGPU.post(
+        //   '/generate_table',
+        //   { output_attributes: this.predictionAttributes, inputs: inputList }
+        // ).then((response) => {
+        //   const extracted_values_list = response.data
+        //   console.log('extracted values of paper list')
+        //   console.log(extracted_values_list)
 
-          for ( const [index, extracted_values] of extracted_values_list.entries()) {
-            // if (this.paperList[index].annotated === false){
-            //   this.paperList[index]['extracted_values'] = extracted_values
-            // }
-            this.paperList[index]['extracted_values'] = extracted_values
-            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
-          }
+        //   for ( const [index, extracted_values] of extracted_values_list.entries()) {
+        //     // if (this.paperList[index].annotated === false){
+        //     //   this.paperList[index]['extracted_values'] = extracted_values
+        //     // }
+        //     this.paperList[index]['extracted_values'] = extracted_values
+        //     this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+        //   }
 
 
 
-          console.log('count warns works')
-          this.loadingRegenerating = false
+        //   console.log('count warns works')
+        //   this.loadingRegenerating = false
           // this.dataset_json[this.datasetType] = response.data
           // for (const [index, row] of this.paperList.entries()) {
           //   for (const attribute of this.output_attributes) {
@@ -1205,10 +1238,10 @@ export default {
           this.resetPage()
           this.showNotif('Your annotations have been saved', 'green-5', '')
           this.showSaveAndTrain = false
-        }).catch(error => {
-          console.log(error.message)
-          this.showSaveAndTrain = false
-        })
+        // }).catch(error => {
+        //   console.log(error.message)
+        //   this.showSaveAndTrain = false
+        // })
         // this.loadStatus = 0
         // this.getLoadStatus()
       }).catch(error => {
@@ -1254,12 +1287,20 @@ export default {
       // this.selected = [this.paperList[this.selected[0].index + 1]]
       // this.loadSelection()
     },
-    getLoadStatus () {
-      apiGPU.get('/getGenerateStatus')
+    getLoadStatusPrediction () {
+      apiGPU.get('/get_status_prediction')
         .then(responde => {
-          this.loadStatus = Math.round(responde.data)
-          console.log(this.loadStatus)
-          if (this.loadStatus < 100) this.getLoadStatus()
+          this.loadStatusPrediction = Math.round(responde.data)
+          console.log(this.loadStatusPrediction)
+          if (this.loadStatusPrediction < 100) this.getLoadStatusPrediction()
+        }).catch(error => console.log(error))
+    },
+    getLoadStatusTrain () {
+      apiGPU.get('/get_status_train')
+        .then(responde => {
+          this.loadStatusTrain = Math.round(responde.data)
+          console.log(this.loadStatusTrain)
+          if (this.loadStatusTrain < 100) this.getLoadStatusTrain()
         }).catch(error => console.log(error))
     },
     storeFixedPaper (paper) {

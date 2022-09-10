@@ -214,10 +214,20 @@ def SaveAndTrain():
     pred.onlineLearning(input_text, training_list)
     return 'online_training_finished'
 
-@app.route('/getGenerateStatus', methods=['GET'])
-def getGenerateStatus():
+@app.route('/get_status_evaluator', methods=['GET'])
+def get_generate_status_evaluator():
     time.sleep(2)
     return jsonify(evaluator.status)
+
+@app.route('/get_status_train', methods=['GET'])
+def get_status_train():
+    time.sleep(2)
+    return jsonify(evaluator.status_train)
+
+@app.route('/get_status_prediction', methods=['GET'])
+def get_status_prediction():
+    time.sleep(2)
+    return jsonify(evaluator.status_prediction)
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_model():

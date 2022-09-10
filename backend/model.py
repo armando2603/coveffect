@@ -55,7 +55,9 @@ class Predictor:
         self.generated_sequence = None
         self.MAX_LEN = 1000
         self.model = None
-        self.status = 0
+        self.status_train = 0
+        self.status_prediction = 0
+        self.status_generate = 0
         self.model_id = None
         # Load pre-trained model (weights)
         # model_name = 'mrm8488/GPT-2-finetuned-CORD19'
@@ -100,6 +102,7 @@ class Predictor:
 
     def predict_and_saliency(self, input_text, output_attributes):
         self.fields = output_attributes
+        self.status_generate = 0
         # self.model = self.base_model.to(self.device) # TODO verify if .to() copy
         # filenames_checkpoint_folder = next(walk('api/checkpoints/'), (None, None, []))[2]
         list_checkpoint_folder = next(os.walk('api/checkpoints/'))[1]
@@ -131,7 +134,8 @@ class Predictor:
             )
         )
         self.generated_outputs = [[]]
-        for field in self.fields:
+        for it, field in enumerate(self.fields):
+            self.status_prediction = round((it)/len(self.fields), 2) * 100
             self.grad_explains = []
             tmp_generated_outputs = []
             for istance_index, instance in enumerate(self.generated_outputs):
@@ -289,7 +293,7 @@ class Predictor:
         return generated_sequence, output_indexes, distributions, grad_explain, ended_with_eos
 
     def generateTable(self, inputs_text, output_attributes):
-        self.status = 0
+        self.status_generate = 0
         table_outputs = []
         self.fields = output_attributes
         # self.model = self.base_model.to(self.device) # TODO verify if .to() copy
@@ -315,7 +319,7 @@ class Predictor:
         with torch.no_grad():
             for it, input_text in enumerate(tqdm(inputs_text)):
 
-                self.status = round((it + 1)/len(inputs_text), 2) * 100
+                self.status_generate = round((it + 1)/len(inputs_text), 2) * 100
 
 
                 print(input_text)
@@ -457,6 +461,7 @@ class Predictor:
         return generated_sequence, output_indexes, distributions, ended_with_eos
 
     def onlineLearning(self, input_text, output_list):
+        self.status_train = 0
         list_checkpoint_folder = next(os.walk('api/checkpoints/'))[1]
         # print(filenames_checkpoint_folder)
         versions = [
@@ -476,7 +481,8 @@ class Predictor:
             truncation=True,
             max_length=self.MAX_LEN
         ).to(self.device)
-        for output_text in output_list:
+        for it, output_text in enumerate(output_list):
+            self.status_train = round((it + 1)/len(output_list), 2) * 100
             print(output_text)
             output_ids = self.tokenizer.encode(
                 output_text,
