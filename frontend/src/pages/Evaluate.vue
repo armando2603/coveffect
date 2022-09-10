@@ -280,6 +280,7 @@ export default {
     getLoadStatus () {
       apiGPU.get('/reset_status_evaluator')
         .then(responde => {
+          this.loadStatus = 0
           this.getLoadStatusNext()
         }).catch(error => console.log(error))
     },

@@ -243,7 +243,7 @@
                 show-value
                 class=""
                 :value="loadStatusPrediction"
-                size="5em"
+                size="7em"
                 font-size="16px"
                 color="primary"
               >
@@ -328,7 +328,7 @@
                     show-value
                     class=""
                     :value="loadStatusPrediction"
-                    size="7em"
+                    size="10em"
                     font-size="16px"
                     color="primary"
                   >
@@ -1290,6 +1290,7 @@ export default {
     getLoadStatusPrediction () {
       apiGPU.get('/reset_status_prediction')
         .then(responde => {
+          this.loadStatusPrediction = 0
           this.getLoadStatusPredictionNext()
         }).catch(error => console.log(error))
     },
@@ -1304,6 +1305,7 @@ export default {
     getLoadStatusTrain () {
       apiGPU.get('/reset_status_train')
         .then(responde => {
+          this.loadStatusTrain = 0
           this.getLoadStatusTrainNext()
         }).catch(error => console.log(error))
     },
