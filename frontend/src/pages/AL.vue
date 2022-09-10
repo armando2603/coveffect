@@ -831,7 +831,6 @@ export default {
       this.predictionIndex = 'no_index'
       this.instanceIndex = 0
       this.editable_predictions = []
-      this.getLoadStatusPrediction()
       apiGPU.post('/predict_and_saliency',
       {
         input: this.paperList[index].abstract,
@@ -881,6 +880,7 @@ export default {
         // this.activateNoGpuMode()
         
       })
+      this.getLoadStatusPrediction()
     },
     visualize (instanceIndex, predictionIndex) {
       if (this.predictionIndex !== predictionIndex) {
