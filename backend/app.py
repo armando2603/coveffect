@@ -222,6 +222,7 @@ def get_generate_status_evaluator():
 @app.route('/reset_status_evaluator', methods=['GET'])
 def reset_generate_status_evaluator():
     evaluator.status = 0
+    return jsonify({'msg': 'ok'})
 
 @app.route('/get_status_train', methods=['GET'])
 def get_status_train():
@@ -231,6 +232,7 @@ def get_status_train():
 @app.route('/reset_status_train', methods=['GET'])
 def reset_status_train():
     pred.status_train = 0
+    return jsonify({'msg': 'ok'})
 
 @app.route('/get_status_prediction', methods=['GET'])
 def get_status_prediction():
@@ -240,6 +242,7 @@ def get_status_prediction():
 @app.route('/reset_status_prediction', methods=['GET'])
 def reset_status_prediction():
     pred.status_prediction = 0
+    return jsonify({'msg': 'ok'})
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_model():
