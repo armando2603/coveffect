@@ -136,7 +136,7 @@ class Predictor:
         )
         self.generated_outputs = [[]]
         for it, field in enumerate(self.fields):
-            self.status_prediction = round((it)/len(self.fields), 2) * 100
+            self.status_prediction = round((it)/(len(self.fields)-1), 2) * 100
             self.grad_explains = []
             tmp_generated_outputs = []
             for istance_index, instance in enumerate(self.generated_outputs):
