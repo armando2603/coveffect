@@ -174,44 +174,50 @@ def generateTable():
     outputs = pred.generateTable(inputs, attributes)
     return jsonify(outputs)
 
-@app.route('/save_and_train', methods=['POST'])
-def SaveAndTrain():
+@app.route('/train', methods=['POST'])
+def train():
     data = request.get_json()
-    input_text = data['input_text']
-    outputs = data['outputs']
-    if len(outputs) == 0:
-        training_list = ['mutation_name_list: ' + '<EOS>']
-    else:
-        output_list = []
-        field_list = []
-        mutation_name_list = []
-        effect_dict = defaultdict(list)
-        for instance in outputs:
-            # print(instance)
-            mutation_name_list.append(instance['mutation_name']['value'])
-            effect_dict[instance['mutation_name']['value']].append(instance['effect']['value'])
-            output_instance = ''
-            for attribute in instance.keys():
-                if instance[attribute]['attribute'] != 'mutation_type':
-                    output_instance += str(instance[attribute]['attribute']) + ':' ' ' + instance[attribute]['value'] + ' | '
-            output_list.append(output_instance[:-6] + '<EOS>')
+    # input_text = data['input_text']
+    # outputs = data['outputs']
+    train_list = data['train_list']
+    pred.status_train = 0
+    for train_index, train_element in enumerate(train_list):
+        pred.status_train = round((train_index + 1)/len(train_list), 2) * 100
+        input_text = train_element['input_text']
+        outputs = train_element['outputs']
+        if len(outputs) == 0:
+            training_list = ['mutation_name_list: ' + '<EOS>']
+        else:
+            output_list = []
+            field_list = []
+            mutation_name_list = []
+            effect_dict = defaultdict(list)
+            for instance in outputs:
+                # print(instance)
+                mutation_name_list.append(instance['mutation_name']['value'])
+                effect_dict[instance['mutation_name']['value']].append(instance['effect']['value'])
+                output_instance = ''
+                for attribute in instance.keys():
+                    if instance[attribute]['attribute'] != 'mutation_type':
+                        output_instance += str(instance[attribute]['attribute']) + ':' ' ' + instance[attribute]['value'] + ' | '
+                output_list.append(output_instance[:-6] + '<EOS>')
 
 
-        effect_list = []
-        for mutation_name in effect_dict.keys():
-            effect_string = 'mutation_name: ' + mutation_name + ' | ' + 'effect_list: '
-            for effect in effect_dict[mutation_name]:
-                effect_string += effect + ','
-            effect_list.append(effect_string[:-1] + '<EOS>')
+            effect_list = []
+            for mutation_name in effect_dict.keys():
+                effect_string = 'mutation_name: ' + mutation_name + ' | ' + 'effect_list: '
+                for effect in effect_dict[mutation_name]:
+                    effect_string += effect + ','
+                effect_list.append(effect_string[:-1] + '<EOS>')
 
-        mutation_name_list = ','.join(list(set(mutation_name_list)))
-        mutation_name_list = ['mutation_name_list: ' + mutation_name_list + '<EOS>']
-        # print(mutation_name_list)
-        # print(output_list)
-        # print(effect_list)
-        training_list = mutation_name_list + effect_list + output_list 
+            mutation_name_list = ','.join(list(set(mutation_name_list)))
+            mutation_name_list = ['mutation_name_list: ' + mutation_name_list + '<EOS>']
+            # print(mutation_name_list)
+            # print(output_list)
+            # print(effect_list)
+            training_list = mutation_name_list + effect_list + output_list 
 
-    pred.onlineLearning(input_text, training_list)
+        pred.onlineLearning(input_text, training_list)
     return 'online_training_finished'
 
 @app.route('/get_status_evaluator', methods=['GET'])

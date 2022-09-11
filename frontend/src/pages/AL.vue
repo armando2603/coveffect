@@ -429,7 +429,7 @@
               {{ loadStatusTrain }}%
               </q-circular-progress>
             </q-card-section>
-            <!-- <q-card-section class="row justify-evenly" v-if='loadingRegenerating'>
+            <!-- <q-card-section class="row justify-evenly" v-if='showTrainQuestion'>
               <q-circular-progress
                 show-value
                 class=""
@@ -442,16 +442,21 @@
               </q-circular-progress>
             </q-card-section> -->
             <q-card-section class="row justify-evenly">
-              <span v-if='!loadingRegenerating && !loadingRetraining' class="q-ml-sm">You want to submit your corrections??</span>
-              <span v-if='loadingRegenerating' class="q-ml-sm">Updating the table...</span>
+              <span v-if='!showTrainQuestion && !loadingRetraining' class="q-ml-sm">Do you want to submit your corrections??</span>
+              <!-- <span v-if='showTrainQuestion' class="q-ml-sm">Updating the table...</span> -->
               <span v-if='loadingRetraining' class="q-ml-sm">Training the model...</span>
+              <span v-if='showTrainQuestion' class="q-ml-sm">Do you want to train the model with {{annotationStack.length}} annotated papers?</span>
               <!-- <span v-if='missingEdit' class="q-ml-sm">Please edit or confirm all red and yellow values</span> -->
               <!-- <span v-if='zeroWarns' class="q-ml-sm" style='text-align: center'>There are no more critical samples, now you can inspect the remaining samples and save all the remaining samples  with the 'Save All' button. Once all samples are saved you can download them with the 'Export' button  </span> -->
             </q-card-section>
 
-            <q-card-actions v-if='!loadingRegenerating && !loadingRetraining' class="row justify-evenly">
+            <q-card-actions v-if='!showTrainQuestion && !loadingRetraining' class="row justify-evenly">
               <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;showSaveAndTrain=false'/>
-              <q-btn class="q-pb-sm" flat label="Yes" @click='saveAndTrain()' color="primary"/>
+              <q-btn class="q-pb-sm" flat label="Yes" @click='save()' color="primary"/>
+            </q-card-actions>
+            <q-card-actions v-if='showTrainQuestion' class="row justify-evenly">
+              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;showSaveAndTrain=false'/>
+              <q-btn class="q-pb-sm" flat label="Yes" @click='train()' color="primary"/>
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -802,12 +807,13 @@ export default {
       // ],
       showSaveAndTrain: ref(false),
       loadingRetraining: ref(false),
-      loadingRegenerating: ref(false),
+      showTrainQuestion: ref(false),
       loadStatusPrediction: ref(0),
       loadStatusTrain: ref(0),
       edited_Papers: ref([]),
       fixedPapers: ref([]),
-      loadGpt2: ref(false)
+      loadGpt2: ref(false),
+      annotationStack: ref([])
     }
   },
   // computed: {
@@ -1095,7 +1101,7 @@ export default {
       }
       return { index: maxId, max: max }
     },
-    saveAndTrain () {
+    save () {
       api.post(
         '/saveFeedbacks',
         { feedback_list: this.feedback_list }
@@ -1137,7 +1143,7 @@ export default {
         this.showNotif('Your annotations have been saved', 'green-5', '')
         return
       }
-      this.loadingRetraining = true
+      // this.loadingRetraining = true
       let extracted_values = []
       for (let instance of this.editable_predictions) {
         // console.log(tmp_instance[1])
@@ -1149,12 +1155,13 @@ export default {
             output_instance[attribute] = tmp_instance[index]
           }
           extracted_values.push(output_instance)
-
         }
       }
 
+      this.paperList[this.currentPaper].editable_predictions = this.editable_predictions
       this.paperList[this.currentPaper].extracted_values = extracted_values
       this.paperList[this.currentPaper].annotated = true
+      this.paperList[this.currentPaper].trained = false
       this.paperList[this.currentPaper].annotationTime = Date()
       this.paperList[this.currentPaper].annotator = this.sessionName
       // this.paperList[this.currentPaper].warns = this.count_warns(this.paperList[this.currentPaper])
@@ -1164,7 +1171,7 @@ export default {
       this.fixedPapers.push(correctedRow)
       // console.log(this.fixedPapers)
       this.storeFixedPaper(correctedRow)
-
+      this.showTrainQuestion = true
 
       // console.log(extracted_values)
       // for (const output of this.editable_predictions) {
@@ -1173,119 +1180,133 @@ export default {
       // for (const output of this.editable_predictions) {
       //   outputs.push({ attribute: output.attribute, value: output.value })
       // }
+    },
+    train () {
       if (this.sessionName !== 'notrain') {
-      this.getLoadStatusTrain()
-      apiGPU.post(
-        '/save_and_train',
-        {
-          input_text: this.paperList[this.currentPaper].abstract,
-          outputs: extracted_values
-        }
-      ).then((response) => {
-        // const inputList = []
-        // for (const row of this.paperList) {
-        //   inputList.push(row.abstract)
-        // }
-        // TODO: aggiungi il sample modificato alla lista dei sample modificati
-        
-        this.loadingRetraining = false
-        // this.loadingRegenerating = true
-        // apiGPU.post(
-        //   '/generate_table',
-        //   { output_attributes: this.predictionAttributes, inputs: inputList }
-        // ).then((response) => {
-        //   const extracted_values_list = response.data
-        //   console.log('extracted values of paper list')
-        //   console.log(extracted_values_list)
-
-        //   for ( const [index, extracted_values] of extracted_values_list.entries()) {
-        //     // if (this.paperList[index].annotated === false){
-        //     //   this.paperList[index]['extracted_values'] = extracted_values
-        //     // }
-        //     this.paperList[index]['extracted_values'] = extracted_values
-        //     this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
-        //   }
-
-
-
-        //   console.log('count warns works')
-        //   this.loadingRegenerating = false
-          // this.dataset_json[this.datasetType] = response.data
-          // for (const [index, row] of this.paperList.entries()) {
-          //   for (const attribute of this.output_attributes) {
-          //     if (this.paperList[index].extracted_values[attribute].fixed) {
-          //       // console.log('uno fixato')
-          //       // console.log(row.fields[field].value)
-          //       newTable[index].fields[field].value = row.fields[field].value
-          //       newTable[index].fields[field].confidence = row.fields[field].confidence
-          //       newTable[index].fields[field].fixed = true
-          //     }
-          //   }
-          // }
-          // const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
-          // correctedRow.index = this.fixedPapers.length
-          // this.fixedPapers.push(correctedRow)
-          // const extracted_values_list = response.data
-          // for ( const [index, extracted_values] of extracted_values_list.entries()) {
-          //   this.paperList[index]['extracted_values'] = extracted_values
-          //   this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
-          // }
-          // this.paperList.splice(this.currentPaper, 1)
-          // for (const [newIndex, row] of this.paperList.entries()) {
-          //   this.paperList[newIndex].index = newIndex
-          // }
-          // this.storeFixedPapers()
-          this.resetPage()
-          this.showNotif('Your annotations have been saved', 'green-5', '')
-          this.showSaveAndTrain = false
-        // }).catch(error => {
-        //   console.log(error.message)
-        //   this.showSaveAndTrain = false
-        // })
-        // this.loadStatus = 0
-        // this.getLoadStatus()
-      }).catch(error => {
-        console.log(error.message)
-        this.loadingRetraining = false
-      })
-
-      } else {
-        this.loadingRetraining = false
-        this.loadingRegenerating = true
-        const inputList = []
-        for (const row of this.paperList) {
-          inputList.push(row.abstract)
+        this.getLoadStatusTrain()
+        let trainList = []
+        for (const paper of this.paperList) {
+          if ( paper.annotated && !paper.trained ) {
+            trainList.push({ 
+              input_text: paper.abstract,
+              outputs: paper.extracted_values
+            })
+          }
         }
         apiGPU.post(
-          '/generate_table',
-          { output_attributes: this.predictionAttributes, inputs: inputList }
-        ).then((response) => {
-          const extracted_values_list = response.data
-          console.log('extracted values of paper list')
-          console.log(extracted_values_list)
-
-          for ( const [index, extracted_values] of extracted_values_list.entries()) {
-            // if (this.paperList[index].annotated === false){
-            //   this.paperList[index]['extracted_values'] = extracted_values
-            // }
-            this.paperList[index]['extracted_values'] = extracted_values
-            this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          '/train',
+          {
+            // input_text: this.paperList[this.currentPaper].abstract,
+            // outputs: extracted_values
+            train_list: trainList
           }
+        ).then((response) => {
+          // const inputList = []
+          // for (const row of this.paperList) {
+          //   inputList.push(row.abstract)
+          // }
+          // TODO: aggiungi il sample modificato alla lista dei sample modificati
+          for (const [paper_index, paper] of this.paperList.entries()) {
+            this.paperList[paper_index].trained = true
+          }
+          this.loadingRetraining = false
+          // this.showTrainQuestion = true
+          // apiGPU.post(
+          //   '/generate_table',
+          //   { output_attributes: this.predictionAttributes, inputs: inputList }
+          // ).then((response) => {
+          //   const extracted_values_list = response.data
+          //   console.log('extracted values of paper list')
+          //   console.log(extracted_values_list)
+
+          //   for ( const [index, extracted_values] of extracted_values_list.entries()) {
+          //     // if (this.paperList[index].annotated === false){
+          //     //   this.paperList[index]['extracted_values'] = extracted_values
+          //     // }
+          //     this.paperList[index]['extracted_values'] = extracted_values
+          //     this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+          //   }
 
 
 
-          console.log('count warns works')
-          this.loadingRegenerating = false
-          this.resetPage()
-          this.showNotif('Your annotations have been saved', 'green-5', '')
-          this.showSaveAndTrain = false
+          //   console.log('count warns works')
+          //   this.showTrainQuestion = false
+            // this.dataset_json[this.datasetType] = response.data
+            // for (const [index, row] of this.paperList.entries()) {
+            //   for (const attribute of this.output_attributes) {
+            //     if (this.paperList[index].extracted_values[attribute].fixed) {
+            //       // console.log('uno fixato')
+            //       // console.log(row.fields[field].value)
+            //       newTable[index].fields[field].value = row.fields[field].value
+            //       newTable[index].fields[field].confidence = row.fields[field].confidence
+            //       newTable[index].fields[field].fixed = true
+            //     }
+            //   }
+            // }
+            // const correctedRow = JSON.parse(JSON.stringify(this.paperList[this.currentPaper]))
+            // correctedRow.index = this.fixedPapers.length
+            // this.fixedPapers.push(correctedRow)
+            // const extracted_values_list = response.data
+            // for ( const [index, extracted_values] of extracted_values_list.entries()) {
+            //   this.paperList[index]['extracted_values'] = extracted_values
+            //   this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+            // }
+            // this.paperList.splice(this.currentPaper, 1)
+            // for (const [newIndex, row] of this.paperList.entries()) {
+            //   this.paperList[newIndex].index = newIndex
+            // }
+            // this.storeFixedPapers()
+            // this.resetPage()
+            this.showNotif('Your annotations have been saved', 'green-5', '')
+            this.showSaveAndTrain = false
+          // }).catch(error => {
+          //   console.log(error.message)
+          //   this.showSaveAndTrain = false
+          // })
+          // this.loadStatus = 0
+          // this.getLoadStatus()
+        }).catch(error => {
+          console.log(error.message)
+          this.loadingRetraining = false
         })
 
-      }
+        } else {
+          this.loadingRetraining = false
+          this.showTrainQuestion = true
+          const inputList = []
+          for (const row of this.paperList) {
+            inputList.push(row.abstract)
+          }
+          apiGPU.post(
+            '/generate_table',
+            { output_attributes: this.predictionAttributes, inputs: inputList }
+          ).then((response) => {
+            const extracted_values_list = response.data
+            console.log('extracted values of paper list')
+            console.log(extracted_values_list)
 
-      // seleziono paper subito dopo
-      // this.selected = [this.paperList[this.selected[0].index + 1]]
-      // this.loadSelection()
+            for ( const [index, extracted_values] of extracted_values_list.entries()) {
+              // if (this.paperList[index].annotated === false){
+              //   this.paperList[index]['extracted_values'] = extracted_values
+              // }
+              this.paperList[index]['extracted_values'] = extracted_values
+              this.paperList[index]['warns'] = this.count_warns(this.paperList[index])
+            }
+
+
+
+            console.log('count warns works')
+            this.showTrainQuestion = false
+            this.resetPage()
+            this.showNotif('Your annotations have been saved', 'green-5', '')
+            this.showSaveAndTrain = false
+          })
+
+        }
+
+        // seleziono paper subito dopo
+        // this.selected = [this.paperList[this.selected[0].index + 1]]
+        // this.loadSelection()
     },
     getLoadStatusPrediction () {
       apiGPU.get('/reset_status_prediction')

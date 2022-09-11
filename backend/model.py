@@ -485,7 +485,7 @@ class Predictor:
             max_length=self.MAX_LEN
         ).to(self.device)
         for it, output_text in enumerate(output_list):
-            self.status_train = round((it + 1)/len(output_list), 2) * 100
+            # self.status_train = round((it + 1)/len(output_list), 2) * 100
             print(output_text)
             output_ids = self.tokenizer.encode(
                 output_text,
@@ -517,7 +517,7 @@ class Predictor:
                 output = self.model(inp_out_ids, labels=labels, return_dict=True)
                 loss = output.loss
                 print(loss)
-                if (loss < 0.175):
+                if (loss < 0.2):
                     not_match = False
                 loss.backward()
                 optimizer.step()
