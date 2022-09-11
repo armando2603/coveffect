@@ -464,7 +464,7 @@ class Predictor:
         return generated_sequence, output_indexes, distributions, ended_with_eos
 
     def onlineLearning(self, input_text, output_list):
-        self.status_train = 0
+        # self.status_train = 0
         list_checkpoint_folder = next(os.walk('api/checkpoints/'))[1]
         # print(filenames_checkpoint_folder)
         versions = [

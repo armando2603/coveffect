@@ -417,8 +417,8 @@
               </div>
             </q-card-section>
             <q-card-section class="row justify-evenly" v-if='loadingRetraining'>
-              <!-- <q-spinner color="primary" size="3em" /> -->
-              <q-circular-progress
+              <q-spinner color="primary" size="3em" />
+              <!-- <q-circular-progress
                 show-value
                 class=""
                 :value="loadStatusTrain"
@@ -427,7 +427,7 @@
                 color="primary"
               >
               {{ loadStatusTrain }}%
-              </q-circular-progress>
+              </q-circular-progress> -->
             </q-card-section>
             <!-- <q-card-section class="row justify-evenly" v-if='showTrainQuestion'>
               <q-circular-progress
@@ -813,7 +813,8 @@ export default {
       edited_Papers: ref([]),
       fixedPapers: ref([]),
       loadGpt2: ref(false),
-      annotationStack: ref([])
+      annotationStack: ref([]),
+      trainStackCounter: ref(0)
     }
   },
   // computed: {
@@ -1171,6 +1172,7 @@ export default {
       this.fixedPapers.push(correctedRow)
       // console.log(this.fixedPapers)
       this.storeFixedPaper(correctedRow)
+      this.trainStackCounter +=1
       this.showTrainQuestion = true
 
       // console.log(extracted_values)
@@ -1183,7 +1185,8 @@ export default {
     },
     train () {
       if (this.sessionName !== 'notrain') {
-        this.getLoadStatusTrain()
+        this.showTrainQuestion = false
+        // this.getLoadStatusTrain()
         let trainList = []
         for (const paper of this.paperList) {
           if ( paper.annotated && !paper.trained ) {
@@ -1193,6 +1196,7 @@ export default {
             })
           }
         }
+        this.loadingRetraining = true
         apiGPU.post(
           '/train',
           {
@@ -1210,6 +1214,7 @@ export default {
             this.paperList[paper_index].trained = true
           }
           this.loadingRetraining = false
+          this.trainStackCounter = 0
           // this.showTrainQuestion = true
           // apiGPU.post(
           //   '/generate_table',
@@ -1541,6 +1546,10 @@ export default {
       // console.log(response.data)
     }).catch( (error) => {error.message})
     this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+
+    for (const paper of this.paperList) {
+      if ( paper.annotated && !paper.trained ) this.trainStackCounter += 1
+    }
     // api.get(
     //   '/paperlist'
     // ).then((response) => {

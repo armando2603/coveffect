@@ -180,7 +180,7 @@ def train():
     # input_text = data['input_text']
     # outputs = data['outputs']
     train_list = data['train_list']
-    pred.status_train = 0
+    # pred.status_train = 0
     for train_index, train_element in enumerate(train_list):
         pred.status_train = round((train_index + 1)/len(train_list), 2) * 100
         input_text = train_element['input_text']
@@ -200,7 +200,7 @@ def train():
                 for attribute in instance.keys():
                     if instance[attribute]['attribute'] != 'mutation_type':
                         output_instance += str(instance[attribute]['attribute']) + ':' ' ' + instance[attribute]['value'] + ' | '
-                output_list.append(output_instance[:-6] + '<EOS>')
+                output_list.append(output_instance[:-3] + '<EOS>')
 
 
             effect_list = []
