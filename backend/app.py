@@ -5,8 +5,7 @@ from api.similar import similar_by_cord, similar_by_doi
 from database.database import db_session
 from flask_cors import CORS, cross_origin
 import time
-from os import path
-from os import walk
+from os import path, walk, listdir
 from collections import defaultdict
 from scripts.evaluate import Evaluator, evaluate
 from model import Predictor
@@ -265,15 +264,17 @@ def evaluate_model():
 
 @app.route('/checkpoint_list', methods=['GET'])
 def checkpoint_list():
-    checkpoints_path = 'api/Checkpoints/'
+    checkpoints_path = 'api/checkpoints/'
     test_resuls_path = 'api/test_results/'
-    filenames_checkpoint_folder = next(walk(checkpoints_path), (None, None, []))[2]
+    folder_names = [ name for name in listdir(checkpoints_path) if path.isdir(checkpoints_path + name)]
+    print(folder_names)
+    # filenames_checkpoint_folder = next(walk(checkpoints_path), (None, None, []))[2]
     filenames_test_results_folder = next(walk(test_resuls_path), (None, None, []))[2]
-    filenames_ckpt = [filename for filename in filenames_checkpoint_folder if 'ckpt' in filename[-4:]]
+    # filenames_ckpt = [filename for filename in filenames_checkpoint_folder if 'ckpt' not in filename]
     new_checkpoints = [
-        filename for filename in filenames_ckpt if filename[:-5] + '.tsv' not in filenames_test_results_folder
+        folder_name for folder_name in folder_names if folder_name + '.tsv' not in filenames_test_results_folder
     ]
     history_checkpoints = [
-        filename for filename in filenames_ckpt if filename[:-5] + '.tsv' in filenames_test_results_folder
+        folder_name for folder_name in folder_names if folder_name + '.tsv' in filenames_test_results_folder
     ]
     return jsonify({ 'new_checkpoints': new_checkpoints, 'history_checkpoints': history_checkpoints})

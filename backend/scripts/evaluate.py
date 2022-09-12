@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import torch
-from transformers import GPT2Config, GPT2LMHeadModel, AutoTokenizer
+from transformers import GPT2Config, GPT2LMHeadModel, AutoTokenizer, AutoModelForCausalLM
 from collections import OrderedDict
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -228,7 +228,7 @@ def evaluate (
             'df_scores_by_doi': json.loads(scores_by_doi.to_json(orient='records'))
         }
 
-    my_file = Path('api/test_results/' + checkpoint_name[:-5] + '.tsv')
+    my_file = Path('api/test_results/' + checkpoint_name + '.tsv')
     # print(my_file.is_file())
     if not my_file.is_file():
 
@@ -311,9 +311,9 @@ def evaluate (
                 'effect': [prediction['effect'] for prediction in prediction_list],
                 'level': [prediction['level'] for prediction in prediction_list]
             }
-        ).to_csv('api/test_results/' + checkpoint_name[:-5] + '.tsv', sep='\t')
+        ).to_csv('api/test_results/' + checkpoint_name + '.tsv', sep='\t')
 
-    df_predictions = pd.read_csv('api/test_results/' + checkpoint_name[:-5] + '.tsv', sep='\t', index_col=[0])
+    df_predictions = pd.read_csv('api/test_results/' + checkpoint_name + '.tsv', sep='\t', index_col=[0])
     df_predictions = df_predictions.fillna('')
     df_predictions['entity'] = df_predictions['entity'].astype(str).str.upper()
     df_test = pd.read_csv('api/local_data/test_set.csv', sep='\t', index_col=[0])
@@ -454,13 +454,12 @@ class Evaluator:
 
     def evaluate(
         self,
-        model_name_input="mrm8488/GPT-2-finetuned-CORD19",
+        # model_name_input="mrm8488/GPT-2-finetuned-CORD19",
         checkpoint_name_input=None
     ):
-        model_name = model_name_input
         checkpoint_name = checkpoint_name_input
 
-        my_file = Path('api/test_results/' + checkpoint_name[:-5] + '.tsv')
+        my_file = Path('api/test_results/' + checkpoint_name + '.tsv')
         # print(my_file.is_file())
         if not my_file.is_file():
 
@@ -472,41 +471,44 @@ class Evaluator:
                 'max_len': 900,
             }
 
+            self.model = AutoModelForCausalLM.from_pretrained('api/checkpoints/' + checkpoint_name)
+            self.tokenizer = AutoTokenizer.from_pretrained('api/checkpoints/' + checkpoint_name)
+
             # Load pre-trained model (weights)
             # self.model_name = "mrm8488/GPT-2-finetuned-CORD19"
-            config = GPT2Config()
-            self.model = GPT2LMHeadModel(config)
-            self.model.eval()
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.tokenizer.add_special_tokens({
-                'pad_token': '<PAD>',
-                'bos_token': '<BOS>',
-                'eos_token': '<EOS>',
-                'sep_token': '<SEP>',
-                'additional_special_tokens': ['<SEPO>']
-            })
-            self.model.resize_token_embeddings(len(self.tokenizer))
+            # config = GPT2Config()
+            # self.model = GPT2LMHeadModel(config)
+            # self.model.eval()
+            # self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            # self.tokenizer.add_special_tokens({
+            #     'pad_token': '<PAD>',
+            #     'bos_token': '<BOS>',
+            #     'eos_token': '<EOS>',
+            #     'sep_token': '<SEP>',
+            #     'additional_special_tokens': ['<SEPO>']
+            # })
+            # self.model.resize_token_embeddings(len(self.tokenizer))
 
-            # checkpoint_name = 'multiple-instances-cord19-epoch=06.ckpt'
-            checkpoint = torch.load('api/checkpoints/' + checkpoint_name, map_location='cpu')
-            if 'state_dict' in checkpoint.keys():
-                state_dict = checkpoint['state_dict']
-                new_state_dict = OrderedDict()
-                for k, v in state_dict.items():
-                    if k[:6] == 'model.':
-                        name = k[6:]
-                    else:
-                        name = k
-                    new_state_dict[name] = v
-                self.model.load_state_dict(new_state_dict)
-                print(checkpoint_name, 'new state dict load')
-                torch.save(self.model.state_dict(), '/api/checkpoints/' + checkpoint_name)
-            else:
-                self.model.load_state_dict(checkpoint)
-                print(checkpoint_name, 'checkpoint loaded')
-                del checkpoint
+            # # checkpoint_name = 'multiple-instances-cord19-epoch=06.ckpt'
+            # checkpoint = torch.load('api/checkpoints/' + checkpoint_name, map_location='cpu')
+            # if 'state_dict' in checkpoint.keys():
+            #     state_dict = checkpoint['state_dict']
+            #     new_state_dict = OrderedDict()
+            #     for k, v in state_dict.items():
+            #         if k[:6] == 'model.':
+            #             name = k[6:]
+            #         else:
+            #             name = k
+            #         new_state_dict[name] = v
+            #     self.model.load_state_dict(new_state_dict)
+            #     print(checkpoint_name, 'new state dict load')
+            #     torch.save(self.model.state_dict(), '/api/checkpoints/' + checkpoint_name)
+            # else:
+            #     self.model.load_state_dict(checkpoint)
+            #     print(checkpoint_name, 'checkpoint loaded')
+            #     del checkpoint
 
-            self.model.to(self.device)
+            # self.model.to(self.device)
 
             df_test = pd.read_csv('api/local_data/test_set.csv', sep='\t', index_col=[0])
             prediction_attributes = [
@@ -543,9 +545,9 @@ class Evaluator:
                     'effect': [prediction['effect'] for prediction in prediction_list],
                     'level': [prediction['level'] for prediction in prediction_list]
                 }
-            ).to_csv('api/test_results/' + checkpoint_name[:-5] + '.tsv', sep='\t')
+            ).to_csv('api/test_results/' + checkpoint_name + '.tsv', sep='\t')
 
-        df_predictions = pd.read_csv('api/test_results/' + checkpoint_name[:-5] + '.tsv', sep='\t', index_col=[0])
+        df_predictions = pd.read_csv('api/test_results/' + checkpoint_name + '.tsv', sep='\t', index_col=[0])
         df_predictions = df_predictions.fillna('')
         df_predictions['entity'] = df_predictions['entity'].astype(str).str.upper()
         df_test = pd.read_csv('api/local_data/test_set.csv', sep='\t', index_col=[0])
