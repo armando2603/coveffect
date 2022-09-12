@@ -1178,6 +1178,10 @@ export default {
         this.trainStackCounter += 1
       }
 
+      if ( !(this.paperList[this.currentPaper].annotated) ) {
+        this.numAnnotatedPapers += 1
+      }
+
       this.paperList[this.currentPaper].editable_predictions = this.editable_predictions
       this.paperList[this.currentPaper].extracted_values = extracted_values
       this.paperList[this.currentPaper].annotated = true
@@ -1203,7 +1207,7 @@ export default {
     train () {
       if (this.sessionName !== 'notrain') {
         this.showTrainQuestion = false
-        // this.getLoadStatusTrain()
+        this.getLoadStatusTrain()
         let trainList = []
         for (const paper of this.paperList) {
           if ( paper.annotated && !paper.trained ) {

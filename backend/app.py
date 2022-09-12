@@ -182,7 +182,6 @@ def train():
     train_list = data['train_list']
     # pred.status_train = 0
     for train_index, train_element in enumerate(train_list):
-        pred.status_train = round((train_index + 1)/len(train_list), 2) * 100
         input_text = train_element['input_text']
         outputs = train_element['outputs']
         if len(outputs) == 0:
@@ -218,6 +217,7 @@ def train():
             training_list = mutation_name_list + effect_list + output_list 
 
         pred.onlineLearning(input_text, training_list)
+        pred.status_train = round((train_index + 1)/len(train_list), 2) * 100
     return 'online_training_finished'
 
 @app.route('/get_status_evaluator', methods=['GET'])
