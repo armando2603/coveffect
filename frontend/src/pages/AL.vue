@@ -1283,7 +1283,7 @@ export default {
             // }
             // this.storeFixedPapers()
             // this.resetPage()
-            this.showNotif('Your annotations have been saved', 'green-5', '')
+            this.showNotif('The model was trained', 'green-5', '')
             this.showSaveAndTrain = false
           // }).catch(error => {
           //   console.log(error.message)
