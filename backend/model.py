@@ -521,6 +521,7 @@ class Predictor:
                     not_match = False
                 loss.backward()
                 optimizer.step()
+            self.status_train = round((it + 1)/len(output_list), 2) * 100
 
         self.annotation_count += 1
         with open('api/local_data/annotation_count.json', 'w') as f:

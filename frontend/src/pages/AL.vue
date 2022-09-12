@@ -239,16 +239,21 @@
           <q-card-section class="column" style="overflow: auto; flex-grow: 1">
             <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
               <!-- <q-spinner color="primary" size="5em" /> -->
-              <q-circular-progress
-                show-value
-                class=""
-                :value="loadStatusPrediction"
-                size="7em"
-                font-size="16px"
-                color="primary"
-              >
-              {{ loadStatusPrediction }}%
-              </q-circular-progress>
+              <div class="column">
+                <div class="row justify-evenly text-h7 q-mb-sm text-primary">Retrieval of saliency maps...</div>
+                <div class="row justify-evenly">
+                  <q-circular-progress
+                    show-value
+                    class=""
+                    :value="loadStatusPrediction"
+                    size="7em"
+                    font-size="16px"
+                    color="primary"
+                  >
+                  {{ loadStatusPrediction }}%
+                  </q-circular-progress>
+                </div>
+              </div>
             </div>
             <div v-if='!loadGpt2' class="scroll overflow-auto">
               <!-- {{paperList.length === 0 ? '' : paperList[currentPaper].abstract}} -->
@@ -279,6 +284,11 @@
                 <q-field stack-label borderless label-color="primary" label='Annotated Papers:'>
                   <template v-slot:control>
                     <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{numAnnotatedPapers + "/" + paperList.length}}</div>
+                  </template>
+                </q-field>
+                <q-field stack-label borderless label-color="primary" label='ReadyToTrain Papers:'>
+                  <template v-slot:control>
+                    <div v-if="paperList.length !== 0" class="self-center full-width no-outline" tabindex="0">{{trainStackCounter}}</div>
                   </template>
                 </q-field>
                 <q-field stack-label borderless label-color="primary" label='DOI:'>
@@ -324,16 +334,21 @@
               <q-card-section style="overflow: auto; flex-grow: 1;max-height: 400px">
                 <div v-if='loadGpt2' class='row q-mt-md q-mb-md justify-evenly'>
                   <!-- <q-spinner color="primary" size="6em" /> -->
-                  <q-circular-progress
-                    show-value
-                    class=""
-                    :value="loadStatusPrediction"
-                    size="10em"
-                    font-size="16px"
-                    color="primary"
-                  >
-                  {{ loadStatusPrediction }}%
-                  </q-circular-progress>
+                  <div class="column">
+                    <div class="row justify-evenly text-h7 q-mb-sm text-primary">Retrieval of model predictions...</div>
+                    <div class="row justify-evenly">
+                      <q-circular-progress
+                        show-value
+                        class=""
+                        :value="loadStatusPrediction"
+                        size="10em"
+                        font-size="16px"
+                        color="primary"
+                      >
+                      {{ loadStatusPrediction }}%
+                      </q-circular-progress>
+                    </div>
+                  </div>
                 </div>
                 <div v-if='!loadGpt2' class='my-outputs scroll overflow-auto' style="overflow: auto">
                   <div class="column" v-for="(predictions_instance, instance_index) in editable_predictions" :key="predictions_instance">
@@ -417,17 +432,17 @@
               </div>
             </q-card-section>
             <q-card-section class="row justify-evenly" v-if='loadingRetraining'>
-              <q-spinner color="primary" size="3em" />
-              <!-- <q-circular-progress
+              <!-- <q-spinner color="primary" size="5em" /> -->
+              <q-circular-progress
                 show-value
                 class=""
                 :value="loadStatusTrain"
-                size="5em"
+                size="7em"
                 font-size="16px"
                 color="primary"
               >
               {{ loadStatusTrain }}%
-              </q-circular-progress> -->
+              </q-circular-progress>
             </q-card-section>
             <!-- <q-card-section class="row justify-evenly" v-if='showTrainQuestion'>
               <q-circular-progress
@@ -445,7 +460,7 @@
               <span v-if='!showTrainQuestion && !loadingRetraining' class="q-ml-sm">Do you want to submit your corrections??</span>
               <!-- <span v-if='showTrainQuestion' class="q-ml-sm">Updating the table...</span> -->
               <span v-if='loadingRetraining' class="q-ml-sm">Training the model...</span>
-              <span v-if='showTrainQuestion' class="q-ml-sm">Do you want to train the model with {{annotationStack.length}} annotated papers?</span>
+              <span v-if='showTrainQuestion' class="q-ml-sm">Do you want to train the model with {{trainStackCounter}} annotated papers?</span>
               <!-- <span v-if='missingEdit' class="q-ml-sm">Please edit or confirm all red and yellow values</span> -->
               <!-- <span v-if='zeroWarns' class="q-ml-sm" style='text-align: center'>There are no more critical samples, now you can inspect the remaining samples and save all the remaining samples  with the 'Save All' button. Once all samples are saved you can download them with the 'Export' button  </span> -->
             </q-card-section>
@@ -455,7 +470,7 @@
               <q-btn class="q-pb-sm" flat label="Yes" @click='save()' color="primary"/>
             </q-card-actions>
             <q-card-actions v-if='showTrainQuestion' class="row justify-evenly">
-              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;showSaveAndTrain=false'/>
+              <q-btn class="q-pb-sm" flat label="No" color="primary" @click='missingEdit=false;showTrainQuestion=false;showSaveAndTrain=false'/>
               <q-btn class="q-pb-sm" flat label="Yes" @click='train()' color="primary"/>
             </q-card-actions>
           </q-card>
@@ -777,7 +792,7 @@ export default {
       pagination: ref({
         rowsPerPage: 200,
         sortBy: 'index',
-        descending: true
+        descending: false
       }),
       columns: [
         { name: 'index', label: '#', field: 'index',required: false, align: 'left' },
@@ -1059,7 +1074,8 @@ export default {
       // console.log(row)
       this.currentPaper = row.index
       this.selected = [row]
-      this.extraction(this.currentPaper)
+      if (this.paperList[this.currentPaper].annotated) this.editable_predictions = this.paperList[this.currentPaper].editable_predictions
+      else this.extraction(this.currentPaper)
       // console.log(this.selected[0])
     },
     resetPage () {
@@ -1158,6 +1174,9 @@ export default {
           extracted_values.push(output_instance)
         }
       }
+      if ( !(this.paperList[this.currentPaper].annotated && !this.paperList[this.currentPaper].trained) ) {
+        this.trainStackCounter += 1
+      }
 
       this.paperList[this.currentPaper].editable_predictions = this.editable_predictions
       this.paperList[this.currentPaper].extracted_values = extracted_values
@@ -1172,9 +1191,7 @@ export default {
       this.fixedPapers.push(correctedRow)
       // console.log(this.fixedPapers)
       this.storeFixedPaper(correctedRow)
-      this.trainStackCounter +=1
       this.showTrainQuestion = true
-
       // console.log(extracted_values)
       // for (const output of this.editable_predictions) {
       //   if (output.fixed === true) outputs.push({ attribute: output.attribute, value: output.value })

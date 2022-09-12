@@ -369,6 +369,10 @@ export default defineComponent({
       //   }
       // }
       let newPaperList = []
+      for (const [selection_index, paper] of this.selection.entries()){
+        this.selection[selection_index].trained = false
+        this.selection[selection_index].annotated = false
+      }
       newPaperList = this.selection.concat(this.previousPaperList)
       this.generateIndex(newPaperList)
       this.$router.replace({name: 'AL', params: {paperList : JSON.stringify(newPaperList), fixedPapers: JSON.stringify(this.fixedPapers), sessionName: this.sessionName}})

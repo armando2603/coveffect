@@ -96,7 +96,7 @@ import { api } from 'boot/axios';
 const alertTopics = {
   paper_not_found: {
     title: 'Abstract Not Found',
-    body: 'The abstract is not available or the DOI format is not correct'
+    body: 'The abstract is not available or already exist in your list or the DOI format is not correct'
   }
 }
 
@@ -124,7 +124,8 @@ export default {
         'journal',
         'cord_uid'
       ]),
-      testDois: ref([])
+      testDois: ref([]),
+      previousDois: ref([])
     }
   },
   methods : {
@@ -135,7 +136,7 @@ export default {
       ).then((response) => {
         // console.log(response.data[0])
         for (const element of response.data) {
-          if (element.doi !== "" && !this.testDois.includes(element.doi) ) {
+          if (element.doi !== "" && !this.testDois.includes(element.doi) &&  !this.previousDois.includes(element.doi)) {
           // if (element.doi !== "" ) {
             let row = {}
             for (const attribute of this.attributes) {
@@ -166,7 +167,7 @@ export default {
         '/cord_papers',
         { doi: this.DOIText }
       ).then( (response) => {
-        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null ) {
+        if (response.data['found'] == true && response.data['metadata']['abstract'] !== null &&  !this.previousDois.includes(response.data['metadata']['doi'])) {
           let row = response.data['metadata']
           row.keep = true
           row['similar_to'] = ''
@@ -260,7 +261,8 @@ export default {
     // window.addEventListener('beforeunload', function(event) {
     //     console.log('prova')
     //     event.returnValue = 'Write something'
-    //     // this.$router.push('/')
+    //     // this.$router.push('/')\
+    
     // })
     if (Object.keys(this.$route.params).includes('sessionName')) {
       this.sessionName = this.$route.params.sessionName
@@ -268,6 +270,7 @@ export default {
     if (Object.keys(this.$route.params).includes('previousPaperList')) {
       this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
     }
+    for ( const paper of this.previousPaperList ) this.previousDois.push(paper.doi) 
     if (Object.keys(this.$route.params).includes('fixedPapers')) {
       this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
     }
