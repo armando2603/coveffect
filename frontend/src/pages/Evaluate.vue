@@ -226,7 +226,8 @@ export default {
       }
       apiGPU.post(
         '/evaluate',
-        { checkpoint_name: this.checkpointName}
+        { checkpoint_name: this.checkpointName},
+        {timeout: 1000000} 
       ).then( (response) => {
         if ( this.checkpointOptions === this.new_checkpoints_list) {
           this.history_checkpoints_list = this.history_checkpoints_list.filter(function(value, index, arr){ 
@@ -273,6 +274,13 @@ export default {
           level_scores.push(aggregate_row)
         }
         this.level_scores = level_scores
+        apiGPU.get(
+          '/checkpoint_list'
+        ).then( (response) => {
+          this.history_checkpoints_list = response.data['history_checkpoints']
+          this.new_checkpoints_list = response.data['new_checkpoints']
+          this.checkpointOptions = response.data['history_checkpoints']
+        }).catch( (error) => {error.message})
         // this.effect_scores_dict = this.scores_dicts['effect_scores_dict']
         // this.level_scores_dict = this.scores_dicts['level_scores_dict']
       }).catch( (error) => {error.message})
