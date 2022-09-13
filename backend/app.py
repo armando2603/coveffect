@@ -7,7 +7,7 @@ from flask_cors import CORS, cross_origin
 import time
 from os import path, walk, listdir
 from collections import defaultdict
-from scripts.evaluate import Evaluator, evaluate
+from scripts.evaluate import Evaluator
 from model import Predictor
 import json
 
@@ -274,6 +274,9 @@ def checkpoint_list():
     new_checkpoints = [
         folder_name for folder_name in folder_names if folder_name + '.tsv' not in filenames_test_results_folder
     ]
+    # new_checkpoints = [
+    #     folder_name for folder_name in folder_names
+    # ]
     history_checkpoints = [
         folder_name for folder_name in folder_names if folder_name + '.tsv' in filenames_test_results_folder
     ]
