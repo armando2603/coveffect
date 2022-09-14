@@ -126,7 +126,13 @@ class Predictor:
             max_length=self.MAX_LEN - 100 # 100 less because of the conditional input
         )
         print(f'abstract len: {prefix_input_ids.shape}')
-        input_ids = np.array(self.tokenizer.encode(input_text))
+        input_ids = np.array(
+            self.tokenizer.encode(
+                input_text,
+                truncation=True,
+                max_length=self.MAX_LEN - 100
+            )
+        )
         input_tokens = self.tokenizer.convert_ids_to_tokens(input_ids)
         input_tokens = list(
             map(
