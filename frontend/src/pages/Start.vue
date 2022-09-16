@@ -413,10 +413,14 @@ export default defineComponent({
                 similar['numCitedBy'] = response.data['metadata']['numCitedBy']
                 similar['annotated'] = false
                 similar['journal'] = response.data['metadata']['journal'] === '' ? 'preprint' : response.data['metadata']['journal']
-                this.similarPapers.push(similar)
-                this.generateIndex(this.similarPapers)
               }
-            }).catch(error => (error.message))
+              this.similarPapers.push(similar)
+              this.generateIndex(this.similarPapers)
+            }).catch(error => {
+              this.similarPapers.push(similar)
+              this.generateIndex(this.similarPapers)
+              error.message
+            })
           }
         }
         this.showSimilars = true
