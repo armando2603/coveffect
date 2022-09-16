@@ -1553,40 +1553,47 @@ export default {
     }
   },
   created () {
-    this.loadGpt2 = true
-    api.get(
-      '/mutationValues'
-    ).then( (response) => {
-      this.stringOptions.mutation_name = response.data
-      // console.log(response.data)
-    }).catch( (error) => {error.message})
-    api.get(
-      '/effectValues'
-    ).then( (response) => {
-      this.stringOptions.effect = response.data
-      // console.log(response.data)
-    }).catch( (error) => {error.message})
-    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+    if ( Object.keys(this.$route.params).includes('fixedPapers') && Object.keys(this.$route.params).includes('paperList') && Object.keys(this.$route.params).includes('sessionName')) {
+      this.sessionName = this.$route.params.sessionName
+      this.paperList = JSON.parse(this.$route.params.paperList)
+      this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
 
-    for (const paper of this.paperList) {
-      if ( paper.annotated && !paper.trained ) this.trainStackCounter += 1
+      this.loadGpt2 = true
+      api.get(
+        '/mutationValues'
+      ).then( (response) => {
+        this.stringOptions.mutation_name = response.data
+        // console.log(response.data)
+      }).catch( (error) => {error.message})
+      api.get(
+        '/effectValues'
+      ).then( (response) => {
+        this.stringOptions.effect = response.data
+        // console.log(response.data)
+      }).catch( (error) => {error.message})
+
+      for (const paper of this.paperList) {
+        if ( paper.annotated && !paper.trained ) this.trainStackCounter += 1
+      }
+      // api.get(
+      //   '/paperlist'
+      // ).then((response) => {
+      //   // api.get(
+      //   //   '/fixedPapers'
+      //   // ).then( (response) => {
+      //   //   this.fixedPapers = response.data
+      //   // })
+      //   this.paperList = response.data.paper_list
+      //   this.generateTable()
+      // }).catch((error) => (error.message))
+      
+      // console.log(this.paperList)
+      // this.generateTable()
+      this.resetPage()
     }
-    // api.get(
-    //   '/paperlist'
-    // ).then((response) => {
-    //   // api.get(
-    //   //   '/fixedPapers'
-    //   // ).then( (response) => {
-    //   //   this.fixedPapers = response.data
-    //   // })
-    //   this.paperList = response.data.paper_list
-    //   this.generateTable()
-    // }).catch((error) => (error.message))
-    this.sessionName = this.$route.params.sessionName
-    this.paperList = JSON.parse(this.$route.params.paperList)
-    // console.log(this.paperList)
-    // this.generateTable()
-    this.resetPage()
+    else {
+      this.$router.replace({name: 'home'})
+    }
   }
 }
 </script>

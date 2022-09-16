@@ -482,31 +482,38 @@ export default defineComponent({
     // console.log(JSON.parse(this.$route.params.previousPaperList))
     // console.log('doppio parse')
     // console.log(JSON.parse(JSON.parse(this.$route.params.previousPaperList)))
-    this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
-    this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
-    this.paperList = JSON.parse(this.$route.params.paperList)
-    this.sessionName = this.$route.params.sessionName
+    if ( Object.keys(this.$route.params).includes('previousPaperList') && Object.keys(this.$route.params).includes('fixedPapers') && Object.keys(this.$route.params).includes('paperList') && Object.keys(this.$route.params).includes('sessionName')) {
+      this.previousPaperList = JSON.parse(this.$route.params.previousPaperList)
+      this.fixedPapers = JSON.parse(this.$route.params.fixedPapers)
+      this.paperList = JSON.parse(this.$route.params.paperList)
+      this.sessionName = this.$route.params.sessionName
+
+      this.rows = this.paperList
+      this.generateIndex(this.rows)
+      for (let [index, row] of this.paperList.entries()) {
+        row['similar_to'] = ''
+        row['journal'] = row.journal === '' ? 'preprint' : row.journal
+        api.post('/papers', {
+          doi: row.doi
+        }).then((response) => {
+          if (response.data['found'] == true) {
+            row['numCitedBy'] = response.data['metadata']['numCitedBy']
+            row['annotated'] = false
+            row['year'] = response.data['metadata']['year']
+            // row['journal'] = response.data['metadata']['journal']
+            this.rows[index] = row
+          }
+        }).catch(error => (error.message))
+      }
+    }
+    else {
+      this.$router.replace({name: 'home'})
+    }
     // console.log(this.$route.params.sessionName)
     // console.log(this.previousPaperList)
     // console.log(this.fixedPapers)
     // console.log(this.paperList)
-    this.rows = this.paperList
-    this.generateIndex(this.rows)
-    for (let [index, row] of this.paperList.entries()) {
-      row['similar_to'] = ''
-      row['journal'] = row.journal === '' ? 'preprint' : row.journal
-      api.post('/papers', {
-        doi: row.doi
-      }).then((response) => {
-        if (response.data['found'] == true) {
-          row['numCitedBy'] = response.data['metadata']['numCitedBy']
-          row['annotated'] = false
-          row['year'] = response.data['metadata']['year']
-          // row['journal'] = response.data['metadata']['journal']
-          this.rows[index] = row
-        }
-      }).catch(error => (error.message))
-    }
+    
     // api.get(
     //   '/paperlist'
     // ).then((response) => {
