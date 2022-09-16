@@ -4,7 +4,11 @@ from database.model import Metadata
 
 def get_paper(doi):
     sch = SemanticScholar(timeout=3)
-    paper = sch.paper(doi)
+    try:
+        paper = sch.paper(doi)
+    except Exception as e:
+        print(f'The following error occurs: {e.__class__}')
+        return {'found': False, 'metadata': ''}
     fields = [
         'title',
         'authors',
