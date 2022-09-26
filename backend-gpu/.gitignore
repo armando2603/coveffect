@@ -1,5 +1,0 @@
-*.old
-*.ckpt
-*/Checkpoints/*
-*/checkpoints/*
-*/outputs/*
