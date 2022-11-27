@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from pathlib import Path
 import json
+import re
 
 
 class Evaluator:
@@ -21,6 +22,63 @@ class Evaluator:
         self.model_name = None
         self.model = None
         self.tokenizer = None
+        self.greek_names = [
+            'ALPHA',
+            'BETA',
+            'GAMMA',
+            'DELTA',
+            'EPSILON',
+            'ZETA',
+            'ETA',
+            'THETA',
+            'IOTA',
+            'KAPPA',
+            'LAMBDA',
+            'MI',
+            'NI',
+            'XI',
+            'OMICRON',
+            'PI',
+            'RHO',
+            'SIGMA',
+            'TAU',
+            'HYPSILON',
+            'PHI',
+            'CHI',
+            'PSI',
+            'OMEGA',
+        ]
+        self.effects_names = [
+            'binding_to_antibodies',
+            'binding_to_host_receptor',
+            'ct_value',
+            'disease_severity',
+            'effectiveness_of_available_antiviral_drugs',
+            'effectiveness_of_available_diagnostics',
+            'effectiveness_of_available_vaccines',
+            'entry_efficiency',
+            'fatality_rate',
+            'host_virus_interactions',
+            'immune_escape',
+            'infection_duration',
+            'infectivity',
+            'intermolecular_interactions',
+            'protein_conformational_optimization',
+            'protein_flexibility',
+            'protein_functioning',
+            'protein_stability',
+            'risk_of_hospitalization',
+            'risk_of_reinfection',
+            'sensitivity_to_convalescent_sera',
+            'sensitivity_to_antibodies',
+            'sensitivity_to_vaccinated_sera',
+            'viral_fitness',
+            'viral_incubation_period',
+            'viral_load',
+            'viral_replication',
+            'viral_transmission',
+            'viral_virulence',
+        ]
 
 
     def evaluate(
@@ -346,20 +404,20 @@ class Evaluator:
                         if not ended_with_eos:
                             outputs_text = outputs_text[:-1]
                             output_indexes = output_indexes[:-1]
-                        # print('Abstract number:', it)
-                        # print('generated sequence:', self.tokenizer.decode(generated_sequence))
-                        if (len(generated_sequence)) == 0 and field['value'] == 'mutation_name' and field['multiple'] :
-                            tmp_generated_outputs = []
-                            break
-
 
                         outputs_text_filtered = []
                         for i, output_index in enumerate(output_indexes):
                             # confidence 1st token
                             if outputs_text[i] not in outputs_text[:i]:
-                                outputs_text_filtered.append(outputs_text[i])
-                                out_prob = distributions[output_index]
-                                confidences.append(np.max(out_prob))
+                                if field['multiple']:
+                                    if self.output_is_valid(outputs_text[i].strip(), field['value']):
+                                        outputs_text_filtered.append(outputs_text[i].strip())
+                                        out_prob = distributions[output_index]
+                                        confidences.append(np.max(out_prob))
+                                else:
+                                    outputs_text_filtered.append(outputs_text[i].strip())
+                                    out_prob = distributions[output_index]
+                                    confidences.append(np.max(out_prob))
 
                                 # start_index = output_index
                                 # end_index = output_indexes[i + 1] - 1 if i < (len(outputs_text)-1) else len(generated_sequence)
@@ -367,6 +425,33 @@ class Evaluator:
                         assert len(outputs_text_filtered) == len(confidences), \
                             f'n of outputs not correspond n of confidences: {outputs_text} {confidences}\n'\
                             +f'Len Input: {prefix_input_ids.shape}, Len Cond: {conditional_ids.shape}'
+
+                        if len(outputs_text_filtered) == 0 and field['value'] == 'mutation_name' and field['multiple'] :
+                            tmp_generated_outputs = []
+                            break
+
+
+                        # print('Abstract number:', it)
+                        # print('generated sequence:', self.tokenizer.decode(generated_sequence))
+                        # if (len(generated_sequence)) == 0 and field['value'] == 'mutation_name' and field['multiple'] :
+                        #     tmp_generated_outputs = []
+                        #     break
+
+
+                        # outputs_text_filtered = []
+                        # for i, output_index in enumerate(output_indexes):
+                        #     # confidence 1st token
+                        #     if outputs_text[i] not in outputs_text[:i]:
+                        #         outputs_text_filtered.append(outputs_text[i])
+                        #         out_prob = distributions[output_index]
+                        #         confidences.append(np.max(out_prob))
+
+                        #         # start_index = output_index
+                        #         # end_index = output_indexes[i + 1] - 1 if i < (len(outputs_text)-1) else len(generated_sequence)
+
+                        # assert len(outputs_text_filtered) == len(confidences), \
+                        #     f'n of outputs not correspond n of confidences: {outputs_text} {confidences}\n'\
+                        #     +f'Len Input: {prefix_input_ids.shape}, Len Cond: {conditional_ids.shape}'
                         
                         
                         for output_index, output in enumerate(outputs_text_filtered):
@@ -468,5 +553,27 @@ class Evaluator:
             'df_scores_by_doi': json.loads(scores_by_doi.to_json(orient='records'))
         }
 
-
+    def output_is_valid(self, output, attribute):
+        if attribute == 'mutation_name':
+            if re.search('_', output):
+                if re.search('^([A-Z0-9]+_)[A-Z]\d{1,4}[A-Z]$', output):
+                    return True
+                else:
+                    return False
+            else:
+                if re.search('\.', output):
+                    if re.search('^([A-Z]{1,2}\.[0-9]{1,3})(\.[0-9]{1,3}){,2}$', output): 
+                        return True
+                    else:
+                        return False
+                else:
+                    if output in self.greek_names:
+                        return True
+                    else:
+                        return False
+        if attribute == 'effect':
+            if output in self.effects_names:
+                return True
+            else:
+                return False
 
