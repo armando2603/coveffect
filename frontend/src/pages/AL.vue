@@ -558,7 +558,7 @@
                   <!-- Math.round(prediction.confidence * 100 -->
                 </template>
               </q-field>
-              <q-checkbox v-model="fullPaperValue" left-label class="text-primary" label="Abstract doesn't contain this information" />
+              <!-- <q-checkbox v-model="fullPaperValue" left-label class="text-primary" label="Abstract doesn't contain this information" /> -->
             </q-card-section>
             <q-card-section>
               <div @click="firstClickNoFilters">

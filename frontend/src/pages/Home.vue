@@ -2,14 +2,14 @@
   <q-page padding class="row items-strech">
     <div class="col-12 column justify-evenly">
       <div class="row justify-evenly" style="height: 15%">
-        <div class="column justify-evenly">
+        <div class="column justify-evenly q-mr-md  q-pr-xl">
           <div class="row justify-evenly">
             <div class="q-px-sm">
               <q-btn no-caps label="Load Session" color="primary" @click="this.$refs.filePicker.$el.click()"/>
             </div>
-            <div class="q-pr-xl q-mr-md">
+            <!-- <div class="q-pr-xl q-mr-md">
               <q-btn no-caps label="Evaluate" color="primary" @click="this.$router.replace({name: 'evaluate', params: {paperList: JSON.stringify(this.paperList), fixedPapers: JSON.stringify(this.fixedPapers), previousPaperList: JSON.stringify(this.previousPaperList), sessionName: this.sessionName}})"/>
-            </div>
+            </div> -->
           </div>
           <q-file
             dense
